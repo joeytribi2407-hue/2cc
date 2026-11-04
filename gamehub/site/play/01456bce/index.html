@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vua Đỗ Xe Hẻm Nhỏ (Alleyway Ninja) - GameHub</title>
+<style>
+:root{--bg:#0f1220;--card:#1a1e33;--card2:#222744;--text:#eef0ff;--muted:#9aa0c3;--accent:#7c5cff;--accent2:#00d4b4;--danger:#ff5c7a;--ok:#2ecc8f;--r:14px}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:radial-gradient(1200px 600px at 10% -10%,#262b55 0,transparent 60%),var(--bg);color:var(--text);min-height:100vh}
+a{color:inherit;text-decoration:none}
+header{display:flex;align-items:center;gap:16px;padding:14px 24px;position:sticky;top:0;background:rgba(15,18,32,.85);backdrop-filter:blur(10px);border-bottom:1px solid #2a3055;z-index:10}
+.logo{font-weight:800;font-size:22px;letter-spacing:.5px}
+.logo span{color:var(--accent2)}
+.spacer{flex:1}
+.btn{display:inline-block;border:0;cursor:pointer;padding:9px 16px;border-radius:10px;background:var(--accent);color:#fff;font-weight:600;font-size:14px}
+.btn:hover{filter:brightness(1.12)}
+.btn.ghost{background:transparent;border:1px solid #3a4175;color:var(--text)}
+.btn.danger{background:var(--danger)}
+.btn.small{padding:6px 11px;font-size:13px}
+main{max-width:1200px;margin:0 auto;padding:24px}
+h1,h2{margin:0 0 14px}
+.flash{padding:11px 14px;border-radius:10px;margin-bottom:14px;font-size:14px}
+.flash.ok{background:rgba(46,204,143,.15);border:1px solid var(--ok)}
+.flash.err{background:rgba(255,92,122,.15);border:1px solid var(--danger)}
+input,textarea{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #333a6b;background:#12152a;color:var(--text);font:inherit}
+textarea{min-height:160px;font-family:ui-monospace,Consolas,monospace;font-size:13px}
+label{display:block;margin:12px 0 5px;font-size:13px;color:var(--muted)}
+.panel{background:var(--card);border-radius:var(--r);padding:20px;margin-bottom:22px;border:1px solid #2a3055}
+.muted{color:var(--muted)}
+.tags{display:flex;gap:6px;flex-wrap:wrap}
+.tag{font-size:11px;padding:3px 9px;border-radius:99px;background:rgba(124,92,255,.18);border:1px solid rgba(124,92,255,.45);color:#cfc6ff;white-space:nowrap}
+</style>
+
+<style>
+.bar{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.ttl{display:flex;align-items:center;gap:12px;min-width:0}
+.plogo{width:48px;height:48px;border-radius:12px;overflow:hidden;background:linear-gradient(135deg,var(--accent2),var(--accent));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:22px;flex:none}
+.plogo img{width:100%;height:100%;object-fit:cover}
+.bar h1{margin:0;font-size:24px}
+.sub{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:4px;font-size:13px;color:var(--muted)}
+.frame{position:relative;background:#000;border-radius:var(--r);overflow:hidden;border:1px solid #2a3055}
+iframe{width:100%;display:block;border:0;background:#fff}
+/* Tự do: như cũ */
+.o-any iframe{height:78vh;min-height:480px}
+/* Chỉ ngang: khung 16:9 | Chỉ dọc: khung 9:16 — luôn vừa trong 78% chiều cao màn hình */
+.o-landscape .frame{width:min(100%,calc(78vh*16/9));aspect-ratio:16/9;margin:0 auto}
+.o-portrait .frame{width:min(100%,calc(78vh*9/16));aspect-ratio:9/16;margin:0 auto}
+.o-landscape iframe,.o-portrait iframe{height:100%}
+.frame:fullscreen{width:100%;height:100%;aspect-ratio:auto;border-radius:0;border:0}
+/* Nhắc xoay máy (chỉ hiện trên thiết bị cảm ứng khi cầm sai hướng) */
+.rotate{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:16px;background:rgba(15,18,32,.97);color:var(--text)}
+.rotate[hidden]{display:none}
+.rotate .ic{font-size:44px;animation:rot 1.6s ease-in-out infinite}
+.rotate b{font-size:16px}
+@keyframes rot{0%,100%{transform:rotate(0)}50%{transform:rotate(90deg)}}
+.desc{margin-top:14px;color:var(--muted)}
+</style>
+
+</head>
+<body>
+<header>
+  <a class="logo" href="/">🎮 Game<span>Hub</span></a>
+  <div class="spacer"></div>
+  
+</header>
+<main>
+  
+    
+  
+  
+
+<div class="bar">
+  <a class="btn ghost small" href="/">← Trang chủ</a>
+  <div class="ttl">
+    <div class="plogo"><img src="/img/5858f0eb60a04041.png" alt=""></div>
+    <div>
+      <h1>Vua Đỗ Xe Hẻm Nhỏ (Alleyway Ninja)</h1>
+      <div class="sub">
+        <span class="tag">↔ Chơi ngang</span>
+        <span class="tag">Phiêu lưu</span><span class="tag">Đua xe</span><span class="tag">Trẻ em</span></div>
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <button class="btn small" onclick="fs()">⛶ Toàn màn hình</button>
+  <button class="btn ghost small" onclick="document.getElementById('f').src=document.getElementById('f').src">↻ Chơi lại</button>
+</div>
+<div class="o-landscape">
+  <div class="frame" id="frame">
+    <iframe id="f" src="/raw/01456bce.html" allow="fullscreen; autoplay; gamepad; accelerometer"
+      sandbox="allow-scripts allow-pointer-lock allow-popups allow-forms allow-modals"></iframe>
+    <div class="rotate" id="rot" hidden>
+      <div class="ic">📱</div>
+      <b>Hãy xoay ngang thiết bị để chơi game này</b>
+    </div>
+  </div>
+</div>
+<p class="desc">Mỗi 10m có 1 bất ngờ</p>
+<script>
+(function(){
+  var O="landscape", frame=document.getElementById('frame'), rot=document.getElementById('rot');
+  var portraitMQ=matchMedia('(orientation: portrait)'), touch=matchMedia('(pointer: coarse)').matches;
+  function check(){
+    if(!touch||O==='any'){rot.hidden=true;return;}
+    var p=portraitMQ.matches;
+    rot.hidden=!((O==='landscape'&&p)||(O==='portrait'&&!p));
+  }
+  portraitMQ.addEventListener('change',check); window.addEventListener('resize',check); check();
+
+  window.fs=function(){
+    var f=frame.requestFullscreen||frame.webkitRequestFullscreen; if(!f) return;
+    var r=f.call(frame);
+    // Android: khoá hẳn hướng màn hình khi toàn màn hình (iOS không hỗ trợ -> dùng nhắc xoay máy)
+    Promise.resolve(r).then(function(){
+      if(O!=='any'&&screen.orientation&&screen.orientation.lock){screen.orientation.lock(O).catch(function(){});}
+    }).catch(function(){});
+  };
+  document.addEventListener('fullscreenchange',function(){
+    if(!document.fullscreenElement&&screen.orientation&&screen.orientation.unlock){try{screen.orientation.unlock();}catch(e){}}
+  });
+})();
+</script>
+
+</main>
+</body>
+</html>

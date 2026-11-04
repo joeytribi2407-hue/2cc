@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}GameHub - Chơi game{% endblock %}
+{% block head %}
+<style>
+.hero{margin:6px 0 18px}
+.hero h1{font-size:32px}
+.hero p{color:var(--muted);margin:0}
+.toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.toolbar input{max-width:320px}
+.toolbar select{padding:10px 12px;border-radius:10px;border:1px solid #333a6b;background:#12152a;color:var(--text);font:inherit}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.chip{border:1px solid #3a4175;background:transparent;color:var(--text);padding:7px 14px;border-radius:99px;font:inherit;font-size:13px;cursor:pointer}
+.chip:hover{border-color:var(--accent)}
+.chip.on{background:var(--accent);border-color:var(--accent)}
+.chip small{opacity:.7;margin-left:4px}
+.count{color:var(--muted);font-size:13px;margin:0 0 14px}
+
+/* 3 game mỗi hàng */
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px}
+@media(max-width:900px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.grid{grid-template-columns:minmax(0,1fr)}}
+
+.card{background:var(--card);border-radius:var(--r);overflow:hidden;border:1px solid #2a3055;transition:.18s;display:flex;flex-direction:column}
+.card:hover{transform:translateY(-4px);border-color:var(--accent);box-shadow:0 10px 30px rgba(124,92,255,.25)}
+/* Ảnh intro tỉ lệ 16:9 */
+.banner{position:relative;aspect-ratio:16/9;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:64px;font-weight:800;overflow:hidden}
+.banner img{width:100%;height:100%;object-fit:cover;display:block}
+.ori{position:absolute;top:10px;right:10px;background:rgba(0,0,0,.65);color:#fff;font-size:11px;font-weight:600;padding:4px 10px;border-radius:99px;backdrop-filter:blur(4px)}
+.head{display:flex;gap:12px;align-items:flex-end;padding:0 16px;margin-top:-30px;position:relative}
+/* Logo vuông 1:1 */
+.glogo{flex:none;width:62px;height:62px;border-radius:14px;border:3px solid var(--card);background:linear-gradient(135deg,var(--accent2),var(--accent));display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;overflow:hidden}
+.glogo img{width:100%;height:100%;object-fit:cover;display:block}
+.head h3{margin:0 0 3px;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.cbody{padding:12px 16px 16px;display:flex;flex-direction:column;gap:10px;flex:1}
+.cbody p{margin:0;color:var(--muted);font-size:13px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:38px}
+.meta{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);margin-top:auto}
+.empty{text-align:center;padding:60px 20px;color:var(--muted)}
+</style>
+{% endblock %}
+{% block content %}
+<div class="hero">
+  <h1>Chọn game và chơi ngay</h1>
+  <p>Không cần đăng nhập, bấm vào game là chơi.</p>
+</div>
+
+{% if games %}
+<div class="toolbar">
+  <input id="q" type="search" placeholder="Tìm game theo tên...">
+  <select id="sort" aria-label="Sắp xếp">
+    <option value="new">Mới nhất</option>
+    {% if not STATIC_EXPORT %}<option value="hot">Chơi nhiều nhất</option>{% endif %}
+    <option value="az">Tên A → Z</option>
+  </select>
+  <select id="ori" aria-label="Hướng chơi">
+    <option value="">Mọi hướng chơi</option>
+    <option value="landscape">↔ Chơi ngang</option>
+    <option value="portrait">↕ Chơi dọc</option>
+  </select>
+</div>
+{% if genre_counts %}
+<div class="chips" id="chips">
+  <button class="chip on" data-g="">Tất cả<small>{{ games|length }}</small></button>
+  {% for name, n in genre_counts %}<button class="chip" data-g="{{ name }}">{{ name }}<small>{{ n }}</small></button>{% endfor %}
+</div>
+{% endif %}
+<p class="count" id="count"></p>
+
+<div class="grid" id="grid">
+  {% for g in games %}
+  <a class="card" href="{{ url_for('play', gid=g.id) }}"
+     data-t="{{ g.title|lower }}" data-g="{{ g.genres }}" data-p="{{ g.plays }}" data-d="{{ g.created_at }}" data-o="{{ g.orientation }}">
+    <div class="banner">
+      {% if g.orientation == 'landscape' %}<span class="ori">↔ Ngang</span>{% elif g.orientation == 'portrait' %}<span class="ori">↕ Dọc</span>{% endif %}
+      {% if g.image %}<img src="{{ url_for('img', name=g.image) }}" alt="" loading="lazy">{% else %}{{ g.title[:1]|upper }}{% endif %}
+    </div>
+    <div class="head">
+      <div class="glogo">{% if g.logo %}<img src="{{ url_for('img', name=g.logo) }}" alt="" loading="lazy">{% else %}{{ g.title[:1]|upper }}{% endif %}</div>
+      <h3 title="{{ g.title }}">{{ g.title }}</h3>
+    </div>
+    <div class="cbody">
+      {% set gl = g.genres|glist %}
+      {% if gl %}<div class="tags">{% for x in gl %}<span class="tag">{{ x }}</span>{% endfor %}</div>{% endif %}
+      <p>{{ g.description or 'Bấm để chơi' }}</p>
+      <div class="meta"><span>{% if not STATIC_EXPORT %}▶ {{ g.plays }} lượt chơi{% endif %}</span><span class="btn small">Chơi</span></div>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+<div class="empty" id="none" hidden>Không có game nào phù hợp bộ lọc.</div>
+{% else %}
+<div class="empty">
+  <h2>Chưa có game nào</h2>
+  <p>{% if is_admin %}Vào <a href="{{ url_for('admin') }}" style="color:var(--accent2)">Quản trị</a> để thêm game đầu tiên.{% else %}Quay lại sau nhé, game mới sẽ sớm có mặt!{% endif %}</p>
+</div>
+{% endif %}
+
+<script>
+(function(){
+  var grid=document.getElementById('grid'); if(!grid) return;
+  var q=document.getElementById('q'), sortSel=document.getElementById('sort'), oriSel=document.getElementById('ori'),
+      chips=document.getElementById('chips'), count=document.getElementById('count'),
+      none=document.getElementById('none'), genre='';
+  var cards=[].slice.call(grid.querySelectorAll('.card'));
+  function apply(){
+    var v=q.value.trim().toLowerCase(), n=0, s=sortSel.value;
+    cards.sort(function(a,b){
+      if(s==='hot') return (b.dataset.p-a.dataset.p)||(a.dataset.d<b.dataset.d?1:-1);
+      if(s==='az') return a.dataset.t.localeCompare(b.dataset.t,'vi');
+      return a.dataset.d<b.dataset.d?1:-1;
+    });
+    cards.forEach(function(c){
+      grid.appendChild(c);
+      var okG=!genre||(','+c.dataset.g+',').indexOf(','+genre+',')>-1;
+      var okT=!v||c.dataset.t.indexOf(v)>-1;
+      var okO=!oriSel.value||c.dataset.o===oriSel.value;
+      c.style.display=(okG&&okT&&okO)?'':'none'; if(okG&&okT&&okO)n++;
+    });
+    count.textContent='Hiển thị '+n+' / '+cards.length+' game';
+    none.hidden=n>0;
+  }
+  q.addEventListener('input',apply); sortSel.addEventListener('change',apply); oriSel.addEventListener('change',apply);
+  if(chips) chips.addEventListener('click',function(e){
+    var b=e.target.closest('.chip'); if(!b) return;
+    [].forEach.call(chips.children,function(x){x.classList.remove('on')});
+    b.classList.add('on'); genre=b.dataset.g; apply();
+  });
+  apply();
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+{% block title %}Quản trị - GameHub{% endblock %}
+{% block head %}
+<style>
+.two{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:800px){.two{grid-template-columns:1fr}}
+table{width:100%;border-collapse:collapse}
+td,th{padding:10px 8px;border-bottom:1px solid #2a3055;text-align:left;font-size:14px;vertical-align:middle}
+th{color:var(--muted);font-weight:600}
+.tn{width:64px;height:36px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));overflow:hidden;display:flex;align-items:center;justify-content:center;font-weight:800}
+.tn img{width:100%;height:100%;object-fit:cover}
+.lg{width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,var(--accent2),var(--accent));overflow:hidden;display:flex;align-items:center;justify-content:center;font-weight:800}
+.lg img{width:100%;height:100%;object-fit:cover}
+.acts{display:flex;gap:6px;flex-wrap:wrap}
+.acts form{margin:0}
+.hint{font-size:12px;color:var(--muted);margin-top:4px}
+select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #333a6b;background:#12152a;color:var(--text);font:inherit}
+.or{text-align:center;color:var(--muted);margin:12px 0 0;font-size:13px}
+.gchk{display:flex;flex-wrap:wrap;gap:8px}
+.gchk label{margin:0;display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid #3a4175;border-radius:99px;cursor:pointer;font-size:13px;color:var(--text)}
+.gchk input{width:auto;margin:0}
+.gchk label:has(input:checked){background:var(--accent);border-color:var(--accent)}
+.gchk label.dis{opacity:.4;cursor:not-allowed}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.kpi{background:var(--card2);border-radius:12px;padding:14px}
+.kpi b{display:block;font-size:26px}
+.kpi span{color:var(--muted);font-size:13px}
+.bars{display:flex;align-items:flex-end;gap:6px;height:120px;padding-top:8px}
+.bars div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;font-size:10px;color:var(--muted)}
+.bars i{display:block;width:100%;background:linear-gradient(var(--accent2),var(--accent));border-radius:4px 4px 0 0;min-height:2px}
+.bars em{font-style:normal;margin-bottom:2px}
+</style>
+{% endblock %}
+{% block content %}
+<h1>⚙️ Quản trị game</h1>
+
+<div class="panel">
+  <h2>{% if edit %}Sửa game: {{ edit.title }}{% else %}Thêm game mới{% endif %}</h2>
+  <form method="post" action="{{ url_for('save') }}" enctype="multipart/form-data">
+    <input type="hidden" name="csrf" value="{{ csrf() }}">
+    <input type="hidden" name="id" value="{{ edit.id if edit else '' }}">
+    <div class="two">
+      <div>
+        <label>Tên game *</label>
+        <input name="title" maxlength="100" required value="{{ edit.title if edit else '' }}">
+        <label>Mô tả ngắn</label>
+        <input name="description" maxlength="500" value="{{ edit.description if edit else '' }}">
+        {% set cur_o = (edit.orientation if edit else 'any') or 'any' %}
+        <label>Hướng chơi</label>
+        <select name="orientation">
+          <option value="any" {% if cur_o == 'any' %}selected{% endif %}>Tự do (ngang hoặc dọc đều được)</option>
+          <option value="landscape" {% if cur_o == 'landscape' %}selected{% endif %}>Chỉ chơi ngang (khung 16:9)</option>
+          <option value="portrait" {% if cur_o == 'portrait' %}selected{% endif %}>Chỉ chơi dọc (khung 9:16)</option>
+        </select>
+        <div class="hint">Game ngang/dọc sẽ được đặt trong khung đúng tỉ lệ; trên điện thoại cầm sai hướng sẽ có nhắc xoay máy. Nên viết game co giãn theo 100% chiều rộng/cao của khung.</div>
+
+        <label>Logo — ảnh vuông 1:1, khuyên dùng 512×512{% if edit %} (bỏ trống để giữ logo cũ){% endif %}</label>
+        <input type="file" name="logo" accept="image/*">
+        {% if edit and edit.logo %}<div class="hint">Hiện tại: <img src="{{ url_for('img', name=edit.logo) }}" style="height:36px;width:36px;object-fit:cover;vertical-align:middle;border-radius:8px"></div>{% endif %}
+
+        <label>Ảnh intro — tỉ lệ 16:9, khuyên dùng 1280×720{% if edit %} (bỏ trống để giữ ảnh cũ){% endif %}</label>
+        <input type="file" name="image" accept="image/*">
+        {% if edit and edit.image %}<div class="hint">Hiện tại: <img src="{{ url_for('img', name=edit.image) }}" style="height:40px;vertical-align:middle;border-radius:6px"></div>{% endif %}
+        <div class="hint">Ảnh không đúng tỉ lệ sẽ được tự cắt giữa cho vừa khung. Định dạng: png, jpg, gif, webp.</div>
+      </div>
+      <div>
+        <label>File game (.html){% if edit %} — bỏ trống để giữ code cũ{% endif %}</label>
+        <input type="file" name="html_file" accept=".html,.htm,text/html">
+        <div class="or">— hoặc dán code HTML —</div>
+        <textarea name="html_code" placeholder="&lt;!DOCTYPE html&gt; ... toàn bộ code game ..."></textarea>
+        <div class="hint">Nếu chọn file thì file được ưu tiên hơn code dán vào.</div>
+      </div>
+    </div>
+
+    <label>Thể loại (chọn tối đa {{ MAX_GENRES }}) — <span id="gcount" style="color:var(--accent2)"></span></label>
+    {% set cur = (edit.genres if edit else '')|glist %}
+    <div class="gchk" id="gchk">
+      {% for x in GENRES %}<label><input type="checkbox" name="genres" value="{{ x }}" {% if x in cur %}checked{% endif %}>{{ x }}</label>{% endfor %}
+    </div>
+
+    <p style="margin-bottom:0">
+      <button class="btn">{% if edit %}Lưu thay đổi{% else %}Thêm game{% endif %}</button>
+      {% if edit %}<a class="btn ghost" href="{{ url_for('admin') }}">Hủy</a>{% endif %}
+    </p>
+  </form>
+</div>
+
+<div class="panel">
+  <h2>📊 Lượt truy cập</h2>
+  <div class="kpis">
+    <div class="kpi"><b>{{ stats.today }}</b><span>Hôm nay</span></div>
+    <div class="kpi"><b>{{ stats.week }}</b><span>7 ngày qua</span></div>
+    <div class="kpi"><b>{{ stats.total }}</b><span>Tổng lượt chơi</span></div>
+  </div>
+  <div class="muted" style="font-size:13px">Lượt chơi mỗi ngày (14 ngày gần nhất)</div>
+  <div class="bars">
+    {% for d, n in stats.chart %}
+    <div title="{{ d }}: {{ n }} lượt"><em>{{ n if n else '' }}</em><i style="height:{{ (n / stats.cmax * 85)|round|int }}%"></i><span>{{ d[:2] }}</span></div>
+    {% endfor %}
+  </div>
+  <div class="hint">Mỗi người chơi lại cùng một game trong vòng 30 phút chỉ tính 1 lượt, để tránh F5 làm tăng số ảo. Số ngày được ghi từ khi cập nhật bản này; "Tổng" gồm cả lượt chơi trước đó.</div>
+</div>
+
+<div class="panel">
+  <h2>Danh sách game ({{ games|length }})</h2>
+  {% if games %}
+  <div style="overflow-x:auto">
+  <table>
+    <tr><th>Logo</th><th>Intro</th><th>Tên / thể loại</th><th>Hôm nay</th><th>7 ngày</th><th>Tổng</th><th></th></tr>
+    {% for g in games %}
+    {% set p = stats.per.get(g.id, (0, 0)) %}
+    <tr>
+      <td><div class="lg">{% if g.logo %}<img src="{{ url_for('img', name=g.logo) }}">{% else %}{{ g.title[:1]|upper }}{% endif %}</div></td>
+      <td><div class="tn">{% if g.image %}<img src="{{ url_for('img', name=g.image) }}">{% else %}{{ g.title[:1]|upper }}{% endif %}</div></td>
+      <td>{{ g.title }}<div class="tags" style="margin-top:4px">{% if g.orientation == 'landscape' %}<span class="tag">↔ Ngang</span>{% elif g.orientation == 'portrait' %}<span class="tag">↕ Dọc</span>{% endif %}{% for x in g.genres|glist %}<span class="tag">{{ x }}</span>{% endfor %}</div></td>
+      <td>{{ p[0] }}</td>
+      <td>{{ p[1] }}</td>
+      <td><b>{{ g.plays }}</b></td>
+      <td><div class="acts">
+        <a class="btn ghost small" href="{{ url_for('play', gid=g.id) }}">Chơi</a>
+        <a class="btn ghost small" href="{{ url_for('admin', edit=g.id) }}">Sửa</a>
+        <form method="post" action="{{ url_for('delete', gid=g.id) }}" onsubmit="return confirm('Xóa game này? (sẽ có bản sao lưu trước khi xóa)')">
+          <input type="hidden" name="csrf" value="{{ csrf() }}">
+          <button class="btn danger small">Xóa</button>
+        </form>
+      </div></td>
+    </tr>
+    {% endfor %}
+  </table>
+  </div>
+  <div class="hint">Admin bấm "Chơi" cũng được tính lượt truy cập.</div>
+  {% else %}<p class="muted">Chưa có game nào.</p>{% endif %}
+</div>
+
+<div class="two">
+  <div class="panel">
+    <h2>💾 Sao lưu</h2>
+    <p class="muted" style="margin-top:0">Tự động sao lưu mỗi lần thêm/sửa/xóa (giữ 20 bản gần nhất trong thư mục <code>data/backups</code>).</p>
+    <div class="acts">
+      <a class="btn" href="{{ url_for('backup_download') }}">⬇ Tải bản sao lưu (.zip)</a>
+      <form method="post" action="{{ url_for('backup_now') }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><button class="btn ghost">Sao lưu ngay</button></form>
+    </div>
+    <h3 style="margin:18px 0 4px">Khôi phục từ file .zip</h3>
+    <form method="post" action="{{ url_for('backup_restore') }}" enctype="multipart/form-data" onsubmit="return confirm('Khôi phục sẽ ghi đè các game trùng ID. Tiếp tục?')">
+      <input type="hidden" name="csrf" value="{{ csrf() }}">
+      <input type="file" name="zipfile" accept=".zip" required>
+      <p><button class="btn ghost">Khôi phục</button></p>
+    </form>
+    {% if backups %}
+    <h3 style="margin:14px 0 4px">Bản sao lưu trên máy chủ</h3>
+    <table>
+      {% for n, t, s in backups[:8] %}
+      <tr><td>{{ t }}</td><td>{{ s }} KB</td><td><a class="btn ghost small" href="{{ url_for('backup_file', name=n) }}">Tải</a></td></tr>
+      {% endfor %}
+    </table>
+    {% endif %}
+  </div>
+
+  <div class="panel">
+    <h2>🔑 Đổi tài khoản admin</h2>
+    <form method="post" action="{{ url_for('change_password') }}">
+      <input type="hidden" name="csrf" value="{{ csrf() }}">
+      <label>Tên đăng nhập mới</label>
+      <input name="username" value="{{ username }}" required>
+      <label>Mật khẩu hiện tại</label>
+      <input name="current" type="password" required>
+      <label>Mật khẩu mới (tối thiểu 6 ký tự)</label>
+      <input name="new" type="password" minlength="6" required>
+      <p><button class="btn">Đổi</button></p>
+    </form>
+  </div>
+</div>
+
+<script>
+(function(){
+  var MAX={{ MAX_GENRES }}, box=document.getElementById('gchk'), out=document.getElementById('gcount');
+  var ins=[].slice.call(box.querySelectorAll('input'));
+  function upd(){
+    var n=ins.filter(function(i){return i.checked}).length;
+    out.textContent='đã chọn '+n+'/'+MAX;
+    ins.forEach(function(i){
+      var off=!i.checked&&n>=MAX; i.disabled=off; i.parentNode.classList.toggle('dis',off);
+    });
+  }
+  box.addEventListener('change',upd); upd();
+})();
+</script>
+{% endblock %}

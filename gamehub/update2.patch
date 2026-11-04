@@ -1,0 +1,244 @@
+diff -ruN c/app.py e/app.py
+--- c/app.py	2026-11-04 03:54:53.497340556 +0000
++++ e/app.py	2026-11-04 04:33:57.214324903 +0000
+@@ -34,6 +34,7 @@
+           "Đua xe", "Thể thao", "Nhập vai", "Mô phỏng", "Cờ bàn", "Trí nhớ",
+           "Âm nhạc", "Trẻ em"]
+ MAX_GENRES = 3
++ORIENTS = ("any", "landscape", "portrait")  # tự do / chỉ ngang / chỉ dọc
+ PLAY_COOLDOWN = 1800  # 1 người chơi lại cùng game trong 30 phút chỉ tính 1 lượt
+ 
+ app = Flask(__name__)
+@@ -75,6 +76,8 @@
+         c.execute("ALTER TABLE games ADD COLUMN logo TEXT DEFAULT ''")
+     if "genres" not in cols:
+         c.execute("ALTER TABLE games ADD COLUMN genres TEXT DEFAULT ''")
++    if "orientation" not in cols:
++        c.execute("ALTER TABLE games ADD COLUMN orientation TEXT DEFAULT 'any'")
+     c.execute("""CREATE TABLE IF NOT EXISTS plays_daily(
+         game_id TEXT, day TEXT, n INTEGER DEFAULT 0, PRIMARY KEY(game_id, day))""")
+     if not c.execute("SELECT 1 FROM settings WHERE key='admin_hash'").fetchone():
+@@ -350,15 +353,18 @@
+     image = store_image(im_f, row["image"] if row else "")
+     logo = store_image(logo_f, row["logo"] if row else "")
+     gs = ",".join(genres)
++    ori = request.form.get("orientation", "any")
++    if ori not in ORIENTS:
++        ori = "any"
+ 
+     if row:
+-        db().execute("UPDATE games SET title=?, description=?, image=?, logo=?, genres=? WHERE id=?",
+-                     (title, desc, image, logo, gs, gid))
++        db().execute("UPDATE games SET title=?, description=?, image=?, logo=?, genres=?, orientation=? WHERE id=?",
++                     (title, desc, image, logo, gs, ori, gid))
+     else:
+         gid = uuid.uuid4().hex[:8]
+-        db().execute("""INSERT INTO games(id,title,description,image,logo,genres,plays,created_at)
+-                        VALUES(?,?,?,?,?,?,0,?)""",
+-                     (gid, title, desc, image, logo, gs, datetime.now().isoformat(timespec="seconds")))
++        db().execute("""INSERT INTO games(id,title,description,image,logo,genres,orientation,plays,created_at)
++                        VALUES(?,?,?,?,?,?,?,0,?)""",
++                     (gid, title, desc, image, logo, gs, ori, datetime.now().isoformat(timespec="seconds")))
+     if code is not None:
+         with open(os.path.join(GAMES, gid + ".html"), "wb") as out:
+             out.write(code)
+@@ -444,13 +450,14 @@
+             out.write(z.read("games/" + gid + ".html"))
+         image, logo = restore_img(r.get("image")), restore_img(r.get("logo"))
+         genres = ",".join(clean_genres(str(r.get("genres", "") or "").split(","))[:MAX_GENRES])
+-        db().execute("""INSERT INTO games(id,title,description,image,logo,genres,plays,created_at)
+-                        VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET
++        ori = r.get("orientation") if r.get("orientation") in ORIENTS else "any"
++        db().execute("""INSERT INTO games(id,title,description,image,logo,genres,orientation,plays,created_at)
++                        VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET
+                         title=excluded.title, description=excluded.description,
+                         image=excluded.image, logo=excluded.logo, genres=excluded.genres,
+-                        plays=excluded.plays""",
++                        orientation=excluded.orientation, plays=excluded.plays""",
+                      (gid, str(r.get("title", "Game"))[:100], str(r.get("description", ""))[:500],
+-                      image, logo, genres, int(r.get("plays", 0) or 0),
++                      image, logo, genres, ori, int(r.get("plays", 0) or 0),
+                       r.get("created_at") or datetime.now().isoformat(timespec="seconds")))
+         n += 1
+     db().commit()
+diff -ruN c/templates/admin.html e/templates/admin.html
+--- c/templates/admin.html	2026-11-04 03:54:53.497585151 +0000
++++ e/templates/admin.html	2026-11-04 04:33:57.214805386 +0000
+@@ -14,6 +14,7 @@
+ .acts{display:flex;gap:6px;flex-wrap:wrap}
+ .acts form{margin:0}
+ .hint{font-size:12px;color:var(--muted);margin-top:4px}
++select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #333a6b;background:#12152a;color:var(--text);font:inherit}
+ .or{text-align:center;color:var(--muted);margin:12px 0 0;font-size:13px}
+ .gchk{display:flex;flex-wrap:wrap;gap:8px}
+ .gchk label{margin:0;display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid #3a4175;border-radius:99px;cursor:pointer;font-size:13px;color:var(--text)}
+@@ -44,6 +45,14 @@
+         <input name="title" maxlength="100" required value="{{ edit.title if edit else '' }}">
+         <label>Mô tả ngắn</label>
+         <input name="description" maxlength="500" value="{{ edit.description if edit else '' }}">
++        {% set cur_o = (edit.orientation if edit else 'any') or 'any' %}
++        <label>Hướng chơi</label>
++        <select name="orientation">
++          <option value="any" {% if cur_o == 'any' %}selected{% endif %}>Tự do (ngang hoặc dọc đều được)</option>
++          <option value="landscape" {% if cur_o == 'landscape' %}selected{% endif %}>Chỉ chơi ngang (khung 16:9)</option>
++          <option value="portrait" {% if cur_o == 'portrait' %}selected{% endif %}>Chỉ chơi dọc (khung 9:16)</option>
++        </select>
++        <div class="hint">Game ngang/dọc sẽ được đặt trong khung đúng tỉ lệ; trên điện thoại cầm sai hướng sẽ có nhắc xoay máy. Nên viết game co giãn theo 100% chiều rộng/cao của khung.</div>
+ 
+         <label>Logo — ảnh vuông 1:1, khuyên dùng 512×512{% if edit %} (bỏ trống để giữ logo cũ){% endif %}</label>
+         <input type="file" name="logo" accept="image/*">
+@@ -103,7 +112,7 @@
+     <tr>
+       <td><div class="lg">{% if g.logo %}<img src="{{ url_for('img', name=g.logo) }}">{% else %}{{ g.title[:1]|upper }}{% endif %}</div></td>
+       <td><div class="tn">{% if g.image %}<img src="{{ url_for('img', name=g.image) }}">{% else %}{{ g.title[:1]|upper }}{% endif %}</div></td>
+-      <td>{{ g.title }}<div class="tags" style="margin-top:4px">{% for x in g.genres|glist %}<span class="tag">{{ x }}</span>{% endfor %}</div></td>
++      <td>{{ g.title }}<div class="tags" style="margin-top:4px">{% if g.orientation == 'landscape' %}<span class="tag">↔ Ngang</span>{% elif g.orientation == 'portrait' %}<span class="tag">↕ Dọc</span>{% endif %}{% for x in g.genres|glist %}<span class="tag">{{ x }}</span>{% endfor %}</div></td>
+       <td>{{ p[0] }}</td>
+       <td>{{ p[1] }}</td>
+       <td><b>{{ g.plays }}</b></td>
+diff -ruN c/templates/index.html e/templates/index.html
+--- c/templates/index.html	2026-11-04 03:54:53.497764912 +0000
++++ e/templates/index.html	2026-11-04 04:33:57.214893387 +0000
+@@ -23,8 +23,9 @@
+ .card{background:var(--card);border-radius:var(--r);overflow:hidden;border:1px solid #2a3055;transition:.18s;display:flex;flex-direction:column}
+ .card:hover{transform:translateY(-4px);border-color:var(--accent);box-shadow:0 10px 30px rgba(124,92,255,.25)}
+ /* Ảnh intro tỉ lệ 16:9 */
+-.banner{aspect-ratio:16/9;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:64px;font-weight:800;overflow:hidden}
++.banner{position:relative;aspect-ratio:16/9;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:64px;font-weight:800;overflow:hidden}
+ .banner img{width:100%;height:100%;object-fit:cover;display:block}
++.ori{position:absolute;top:10px;right:10px;background:rgba(0,0,0,.65);color:#fff;font-size:11px;font-weight:600;padding:4px 10px;border-radius:99px;backdrop-filter:blur(4px)}
+ .head{display:flex;gap:12px;align-items:flex-end;padding:0 16px;margin-top:-30px;position:relative}
+ /* Logo vuông 1:1 */
+ .glogo{flex:none;width:62px;height:62px;border-radius:14px;border:3px solid var(--card);background:linear-gradient(135deg,var(--accent2),var(--accent));display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;overflow:hidden}
+@@ -50,6 +51,11 @@
+     <option value="hot">Chơi nhiều nhất</option>
+     <option value="az">Tên A → Z</option>
+   </select>
++  <select id="ori" aria-label="Hướng chơi">
++    <option value="">Mọi hướng chơi</option>
++    <option value="landscape">↔ Chơi ngang</option>
++    <option value="portrait">↕ Chơi dọc</option>
++  </select>
+ </div>
+ {% if genre_counts %}
+ <div class="chips" id="chips">
+@@ -62,8 +68,9 @@
+ <div class="grid" id="grid">
+   {% for g in games %}
+   <a class="card" href="{{ url_for('play', gid=g.id) }}"
+-     data-t="{{ g.title|lower }}" data-g="{{ g.genres }}" data-p="{{ g.plays }}" data-d="{{ g.created_at }}">
++     data-t="{{ g.title|lower }}" data-g="{{ g.genres }}" data-p="{{ g.plays }}" data-d="{{ g.created_at }}" data-o="{{ g.orientation }}">
+     <div class="banner">
++      {% if g.orientation == 'landscape' %}<span class="ori">↔ Ngang</span>{% elif g.orientation == 'portrait' %}<span class="ori">↕ Dọc</span>{% endif %}
+       {% if g.image %}<img src="{{ url_for('img', name=g.image) }}" alt="" loading="lazy">{% else %}{{ g.title[:1]|upper }}{% endif %}
+     </div>
+     <div class="head">
+@@ -90,7 +97,7 @@
+ <script>
+ (function(){
+   var grid=document.getElementById('grid'); if(!grid) return;
+-  var q=document.getElementById('q'), sortSel=document.getElementById('sort'),
++  var q=document.getElementById('q'), sortSel=document.getElementById('sort'), oriSel=document.getElementById('ori'),
+       chips=document.getElementById('chips'), count=document.getElementById('count'),
+       none=document.getElementById('none'), genre='';
+   var cards=[].slice.call(grid.querySelectorAll('.card'));
+@@ -105,12 +112,13 @@
+       grid.appendChild(c);
+       var okG=!genre||(','+c.dataset.g+',').indexOf(','+genre+',')>-1;
+       var okT=!v||c.dataset.t.indexOf(v)>-1;
+-      c.style.display=(okG&&okT)?'':'none'; if(okG&&okT)n++;
++      var okO=!oriSel.value||c.dataset.o===oriSel.value;
++      c.style.display=(okG&&okT&&okO)?'':'none'; if(okG&&okT&&okO)n++;
+     });
+     count.textContent='Hiển thị '+n+' / '+cards.length+' game';
+     none.hidden=n>0;
+   }
+-  q.addEventListener('input',apply); sortSel.addEventListener('change',apply);
++  q.addEventListener('input',apply); sortSel.addEventListener('change',apply); oriSel.addEventListener('change',apply);
+   if(chips) chips.addEventListener('click',function(e){
+     var b=e.target.closest('.chip'); if(!b) return;
+     [].forEach.call(chips.children,function(x){x.classList.remove('on')});
+diff -ruN c/templates/play.html e/templates/play.html
+--- c/templates/play.html	2026-11-04 03:54:53.497702155 +0000
++++ e/templates/play.html	2026-11-04 04:33:57.214737818 +0000
+@@ -8,12 +8,26 @@
+ .plogo img{width:100%;height:100%;object-fit:cover}
+ .bar h1{margin:0;font-size:24px}
+ .sub{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:4px;font-size:13px;color:var(--muted)}
+-.frame{background:#000;border-radius:var(--r);overflow:hidden;border:1px solid #2a3055}
+-iframe{width:100%;height:78vh;min-height:480px;border:0;display:block;background:#fff}
++.frame{position:relative;background:#000;border-radius:var(--r);overflow:hidden;border:1px solid #2a3055}
++iframe{width:100%;display:block;border:0;background:#fff}
++/* Tự do: như cũ */
++.o-any iframe{height:78vh;min-height:480px}
++/* Chỉ ngang: khung 16:9 | Chỉ dọc: khung 9:16 — luôn vừa trong 78% chiều cao màn hình */
++.o-landscape .frame{width:min(100%,calc(78vh*16/9));aspect-ratio:16/9;margin:0 auto}
++.o-portrait .frame{width:min(100%,calc(78vh*9/16));aspect-ratio:9/16;margin:0 auto}
++.o-landscape iframe,.o-portrait iframe{height:100%}
++.frame:fullscreen{width:100%;height:100%;aspect-ratio:auto;border-radius:0;border:0}
++/* Nhắc xoay máy (chỉ hiện trên thiết bị cảm ứng khi cầm sai hướng) */
++.rotate{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:16px;background:rgba(15,18,32,.97);color:var(--text)}
++.rotate[hidden]{display:none}
++.rotate .ic{font-size:44px;animation:rot 1.6s ease-in-out infinite}
++.rotate b{font-size:16px}
++@keyframes rot{0%,100%{transform:rotate(0)}50%{transform:rotate(90deg)}}
+ .desc{margin-top:14px;color:var(--muted)}
+ </style>
+ {% endblock %}
+ {% block content %}
++{% set o = game.orientation or 'any' %}
+ <div class="bar">
+   <a class="btn ghost small" href="{{ url_for('index') }}">← Trang chủ</a>
+   <div class="ttl">
+@@ -21,6 +35,7 @@
+     <div>
+       <h1>{{ game.title }}</h1>
+       <div class="sub"><span>▶ {{ game.plays }} lượt chơi</span>
++        {% if o == 'landscape' %}<span class="tag">↔ Chơi ngang</span>{% elif o == 'portrait' %}<span class="tag">↕ Chơi dọc</span>{% endif %}
+         {% for x in game.genres|glist %}<span class="tag">{{ x }}</span>{% endfor %}</div>
+     </div>
+   </div>
+@@ -28,12 +43,39 @@
+   <button class="btn small" onclick="fs()">⛶ Toàn màn hình</button>
+   <button class="btn ghost small" onclick="document.getElementById('f').src=document.getElementById('f').src">↻ Chơi lại</button>
+ </div>
+-<div class="frame">
+-  <iframe id="f" src="{{ url_for('raw', gid=game.id) }}" allow="fullscreen; autoplay; gamepad; accelerometer"
+-    sandbox="allow-scripts allow-pointer-lock allow-popups allow-forms allow-modals"></iframe>
++<div class="o-{{ o }}">
++  <div class="frame" id="frame">
++    <iframe id="f" src="{{ url_for('raw', gid=game.id) }}" allow="fullscreen; autoplay; gamepad; accelerometer"
++      sandbox="allow-scripts allow-pointer-lock allow-popups allow-forms allow-modals"></iframe>
++    <div class="rotate" id="rot" hidden>
++      <div class="ic">📱</div>
++      <b>{% if o == 'landscape' %}Hãy xoay ngang thiết bị để chơi game này{% else %}Hãy xoay dọc thiết bị để chơi game này{% endif %}</b>
++    </div>
++  </div>
+ </div>
+ {% if game.description %}<p class="desc">{{ game.description }}</p>{% endif %}
+ <script>
+-function fs(){var f=document.getElementById('f');(f.requestFullscreen||f.webkitRequestFullscreen||function(){}).call(f);}
++(function(){
++  var O="{{ o }}", frame=document.getElementById('frame'), rot=document.getElementById('rot');
++  var portraitMQ=matchMedia('(orientation: portrait)'), touch=matchMedia('(pointer: coarse)').matches;
++  function check(){
++    if(!touch||O==='any'){rot.hidden=true;return;}
++    var p=portraitMQ.matches;
++    rot.hidden=!((O==='landscape'&&p)||(O==='portrait'&&!p));
++  }
++  portraitMQ.addEventListener('change',check); window.addEventListener('resize',check); check();
++
++  window.fs=function(){
++    var f=frame.requestFullscreen||frame.webkitRequestFullscreen; if(!f) return;
++    var r=f.call(frame);
++    // Android: khoá hẳn hướng màn hình khi toàn màn hình (iOS không hỗ trợ -> dùng nhắc xoay máy)
++    Promise.resolve(r).then(function(){
++      if(O!=='any'&&screen.orientation&&screen.orientation.lock){screen.orientation.lock(O).catch(function(){});}
++    }).catch(function(){});
++  };
++  document.addEventListener('fullscreenchange',function(){
++    if(!document.fullscreenElement&&screen.orientation&&screen.orientation.unlock){try{screen.orientation.unlock();}catch(e){}}
++  });
++})();
+ </script>
+ {% endblock %}

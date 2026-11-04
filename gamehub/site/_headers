@@ -1,0 +1,4 @@
+/raw/*
+  Content-Security-Policy: sandbox allow-scripts allow-pointer-lock allow-popups allow-forms allow-modals
+  Content-Type: text/html; charset=utf-8
+  Cache-Control: no-cache

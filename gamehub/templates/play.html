@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}{{ game.title }} - GameHub{% endblock %}
+{% block head %}
+<style>
+.bar{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.ttl{display:flex;align-items:center;gap:12px;min-width:0}
+.plogo{width:48px;height:48px;border-radius:12px;overflow:hidden;background:linear-gradient(135deg,var(--accent2),var(--accent));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:22px;flex:none}
+.plogo img{width:100%;height:100%;object-fit:cover}
+.bar h1{margin:0;font-size:24px}
+.sub{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:4px;font-size:13px;color:var(--muted)}
+.frame{position:relative;background:#000;border-radius:var(--r);overflow:hidden;border:1px solid #2a3055}
+iframe{width:100%;display:block;border:0;background:#fff}
+/* Tự do: như cũ */
+.o-any iframe{height:78vh;min-height:480px}
+/* Chỉ ngang: khung 16:9 | Chỉ dọc: khung 9:16 — luôn vừa trong 78% chiều cao màn hình */
+.o-landscape .frame{width:min(100%,calc(78vh*16/9));aspect-ratio:16/9;margin:0 auto}
+.o-portrait .frame{width:min(100%,calc(78vh*9/16));aspect-ratio:9/16;margin:0 auto}
+.o-landscape iframe,.o-portrait iframe{height:100%}
+.frame:fullscreen{width:100%;height:100%;aspect-ratio:auto;border-radius:0;border:0}
+/* Nhắc xoay máy (chỉ hiện trên thiết bị cảm ứng khi cầm sai hướng) */
+.rotate{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:16px;background:rgba(15,18,32,.97);color:var(--text)}
+.rotate[hidden]{display:none}
+.rotate .ic{font-size:44px;animation:rot 1.6s ease-in-out infinite}
+.rotate b{font-size:16px}
+@keyframes rot{0%,100%{transform:rotate(0)}50%{transform:rotate(90deg)}}
+.desc{margin-top:14px;color:var(--muted)}
+</style>
+{% endblock %}
+{% block content %}
+{% set o = game.orientation or 'any' %}
+<div class="bar">
+  <a class="btn ghost small" href="{{ url_for('index') }}">← Trang chủ</a>
+  <div class="ttl">
+    <div class="plogo">{% if game.logo %}<img src="{{ url_for('img', name=game.logo) }}" alt="">{% else %}{{ game.title[:1]|upper }}{% endif %}</div>
+    <div>
+      <h1>{{ game.title }}</h1>
+      <div class="sub">{% if not STATIC_EXPORT %}<span>▶ {{ game.plays }} lượt chơi</span>{% endif %}
+        {% if o == 'landscape' %}<span class="tag">↔ Chơi ngang</span>{% elif o == 'portrait' %}<span class="tag">↕ Chơi dọc</span>{% endif %}
+        {% for x in game.genres|glist %}<span class="tag">{{ x }}</span>{% endfor %}</div>
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <button class="btn small" onclick="fs()">⛶ Toàn màn hình</button>
+  <button class="btn ghost small" onclick="document.getElementById('f').src=document.getElementById('f').src">↻ Chơi lại</button>
+</div>
+<div class="o-{{ o }}">
+  <div class="frame" id="frame">
+    <iframe id="f" src="{{ url_for('raw', gid=game.id) }}" allow="fullscreen; autoplay; gamepad; accelerometer"
+      sandbox="allow-scripts allow-pointer-lock allow-popups allow-forms allow-modals"></iframe>
+    <div class="rotate" id="rot" hidden>
+      <div class="ic">📱</div>
+      <b>{% if o == 'landscape' %}Hãy xoay ngang thiết bị để chơi game này{% else %}Hãy xoay dọc thiết bị để chơi game này{% endif %}</b>
+    </div>
+  </div>
+</div>
+{% if game.description %}<p class="desc">{{ game.description }}</p>{% endif %}
+<script>
+(function(){
+  var O="{{ o }}", frame=document.getElementById('frame'), rot=document.getElementById('rot');
+  var portraitMQ=matchMedia('(orientation: portrait)'), touch=matchMedia('(pointer: coarse)').matches;
+  function check(){
+    if(!touch||O==='any'){rot.hidden=true;return;}
+    var p=portraitMQ.matches;
+    rot.hidden=!((O==='landscape'&&p)||(O==='portrait'&&!p));
+  }
+  portraitMQ.addEventListener('change',check); window.addEventListener('resize',check); check();
+
+  window.fs=function(){
+    var f=frame.requestFullscreen||frame.webkitRequestFullscreen; if(!f) return;
+    var r=f.call(frame);
+    // Android: khoá hẳn hướng màn hình khi toàn màn hình (iOS không hỗ trợ -> dùng nhắc xoay máy)
+    Promise.resolve(r).then(function(){
+      if(O!=='any'&&screen.orientation&&screen.orientation.lock){screen.orientation.lock(O).catch(function(){});}
+    }).catch(function(){});
+  };
+  document.addEventListener('fullscreenchange',function(){
+    if(!document.fullscreenElement&&screen.orientation&&screen.orientation.unlock){try{screen.orientation.unlock();}catch(e){}}
+  });
+})();
+</script>
+{% endblock %}
