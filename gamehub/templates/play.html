@@ -2,6 +2,7 @@
 {% block title %}{{ game.title }} - GameHub{% endblock %}
 {% block head %}
 <style>
+[hidden]{display:none!important}
 .bar{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
 .ttl{display:flex;align-items:center;gap:12px;min-width:0}
 .plogo{width:48px;height:48px;border-radius:12px;overflow:hidden;background:linear-gradient(135deg,var(--accent2),var(--accent));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:22px;flex:none}
@@ -17,9 +18,12 @@ iframe{width:100%;display:block;border:0;background:#fff}
 .o-portrait .frame{width:min(100%,calc(78vh*9/16));aspect-ratio:9/16;margin:0 auto}
 .o-landscape iframe,.o-portrait iframe{height:100%}
 .frame:fullscreen{width:100%;height:100%;aspect-ratio:auto;border-radius:0;border:0}
+/* Chế độ "xoay ngang" bằng CSS: khung phủ kín màn hình và xoay 90° (kích thước + transform do JS đặt) */
+.frame.prot{position:fixed!important;top:0!important;left:0!important;z-index:9999!important;margin:0!important;border:0!important;border-radius:0!important;aspect-ratio:auto!important;transform-origin:0 0}
+.frame.prot iframe{height:100%;min-height:0}
+.rexit{position:absolute;top:8px;left:8px;z-index:6;width:38px;height:38px;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:rgba(15,18,32,.6);color:#fff;font-size:18px;cursor:pointer}
 /* Nhắc xoay máy (chỉ hiện trên thiết bị cảm ứng khi cầm sai hướng) */
 .rotate{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:16px;background:rgba(15,18,32,.97);color:var(--text)}
-.rotate[hidden]{display:none}
 .rotate .ic{font-size:44px;animation:rot 1.6s ease-in-out infinite}
 .rotate b{font-size:16px}
 @keyframes rot{0%,100%{transform:rotate(0)}50%{transform:rotate(90deg)}}
@@ -40,6 +44,7 @@ iframe{width:100%;display:block;border:0;background:#fff}
     </div>
   </div>
   <div class="spacer"></div>
+  <button class="btn small" id="rbtn" onclick="toLandscape()" hidden>⟳ Xoay ngang</button>
   <button class="btn small" onclick="fs()">⛶ Toàn màn hình</button>
   <button class="btn ghost small" onclick="document.getElementById('f').src=document.getElementById('f').src">↻ Chơi lại</button>
 </div>
@@ -47,18 +52,48 @@ iframe{width:100%;display:block;border:0;background:#fff}
   <div class="frame" id="frame">
     <iframe id="f" src="{{ url_for('raw', gid=game.id) }}" allow="fullscreen; autoplay; gamepad; accelerometer"
       sandbox="allow-scripts allow-pointer-lock allow-popups allow-forms allow-modals"></iframe>
+    <button class="rexit" id="rexit" onclick="exitRot()" title="Thoát chế độ xoay ngang" hidden>✕</button>
     <div class="rotate" id="rot" hidden>
       <div class="ic">📱</div>
       <b>{% if o == 'landscape' %}Hãy xoay ngang thiết bị để chơi game này{% else %}Hãy xoay dọc thiết bị để chơi game này{% endif %}</b>
+      {% if o == 'landscape' %}<button class="btn small" onclick="toLandscape()">⟳ Xoay ngang ngay</button>{% endif %}
     </div>
   </div>
 </div>
 {% if game.description %}<p class="desc">{{ game.description }}</p>{% endif %}
 <script>
 (function(){
-  var O="{{ o }}", frame=document.getElementById('frame'), rot=document.getElementById('rot');
+  var O="{{ o }}", frame=document.getElementById('frame'), rot=document.getElementById('rot'),
+      rexit=document.getElementById('rexit'), rbtn=document.getElementById('rbtn');
   var portraitMQ=matchMedia('(orientation: portrait)'), touch=matchMedia('(pointer: coarse)').matches;
+  var rotMode=false;
+
+  // Nút "Xoay ngang": chỉ hiện trên thiết bị cảm ứng và với game không phải "chỉ dọc"
+  if(touch&&O!=='portrait') rbtn.hidden=false;
+
+  function layoutRot(){
+    var w=window.innerWidth, h=window.innerHeight;
+    frame.style.width=h+'px'; frame.style.height=w+'px';
+    frame.style.transform='translateX('+w+'px) rotate(90deg)';
+  }
+  function applyRot(on){
+    rotMode=on;
+    if(on){
+      frame.classList.add('prot'); layoutRot();
+      document.body.style.overflow='hidden'; rexit.hidden=false;
+    }else{
+      frame.classList.remove('prot');
+      frame.style.width=frame.style.height=frame.style.transform='';
+      document.body.style.overflow=''; rexit.hidden=true;
+    }
+    check();
+  }
+  window.exitRot=function(){applyRot(false);};
+
   function check(){
+    // Đang xoay bằng CSS mà người dùng đã xoay máy ngang thật -> thoát chế độ giả
+    if(rotMode&&!portraitMQ.matches){applyRot(false);return;}
+    if(rotMode){layoutRot();rot.hidden=true;return;}
     if(!touch||O==='any'){rot.hidden=true;return;}
     var p=portraitMQ.matches;
     rot.hidden=!((O==='landscape'&&p)||(O==='portrait'&&!p));
@@ -73,6 +108,24 @@ iframe{width:100%;display:block;border:0;background:#fff}
       if(O!=='any'&&screen.orientation&&screen.orientation.lock){screen.orientation.lock(O).catch(function(){});}
     }).catch(function(){});
   };
+
+  // Bấm "Xoay ngang": thử khoá hướng thật (Android Chrome), không được thì xoay khung bằng CSS (iPhone...)
+  window.toLandscape=function(){
+    if(!portraitMQ.matches){window.fs();return;}          // máy đang ngang sẵn: chỉ cần toàn màn hình
+    var req=frame.requestFullscreen||frame.webkitRequestFullscreen;
+    function fallback(){
+      var done=function(){if(portraitMQ.matches) applyRot(true);};
+      if(document.fullscreenElement&&document.exitFullscreen){document.exitFullscreen().then(done,done);}
+      else done();
+    }
+    if(!req||!(screen.orientation&&screen.orientation.lock)){fallback();return;}
+    Promise.resolve(req.call(frame))
+      .then(function(){return screen.orientation.lock('landscape');})
+      .then(function(){return new Promise(function(r){setTimeout(r,800);});})
+      .then(function(){if(portraitMQ.matches) fallback();})   // khoá "thành công" nhưng máy không xoay -> xoay bằng CSS
+      .catch(fallback);
+  };
+
   document.addEventListener('fullscreenchange',function(){
     if(!document.fullscreenElement&&screen.orientation&&screen.orientation.unlock){try{screen.orientation.unlock();}catch(e){}}
   });
