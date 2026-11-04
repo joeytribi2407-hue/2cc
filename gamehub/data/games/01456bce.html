@@ -10,6 +10,7 @@
         * {
             user-select: none;
             -webkit-user-select: none;
+            -webkit-touch-callout: none;
             font-family: 'Baloo 2', cursive, sans-serif;
         }
         body, html {
@@ -19,16 +20,44 @@
             height: 100%;
             overflow: hidden;
             background-color: #1a1a2e;
+            touch-action: none;
+            overscroll-behavior: none;
         }
         #game-container {
             position: relative;
             width: 100vw;
             height: 100vh;
+            height: 100dvh;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             background: #0f172a;
+            touch-action: none;
+            transition: width 0.2s ease, height 0.2s ease;
+        }
+        /* Hỗ trợ ép xoay ngang 90 độ trên điện thoại đang cầm dọc hoặc ép xoay dọc */
+        #game-container.forced-landscape {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            width: 100vh;
+            width: 100dvh;
+            height: 100vw;
+            transform: translate(-50%, -50%) rotate(90deg);
+            transform-origin: center center;
+            z-index: 50;
+        }
+        #game-container.forced-portrait {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            width: 100vh;
+            width: 100dvh;
+            height: 100vw;
+            transform: translate(-50%, -50%) rotate(-90deg);
+            transform-origin: center center;
+            z-index: 50;
         }
         canvas {
             display: block;
@@ -36,31 +65,68 @@
             height: 100%;
             box-shadow: 0 10px 30px rgba(0,0,0,0.6);
             cursor: crosshair;
+            touch-action: none;
         }
         .comic-badge {
-            text-shadow: 3px 3px 0px #000, -1px -1px 0px #000, 1px -1px 0px #000, -1px 1px 0px #000, 1px 1px 0px #000;
+            text-shadow: 2px 2px 0px #000, -1px -1px 0px #000, 1px -1px 0px #000, -1px 1px 0px #000, 1px 1px 0px #000;
         }
         .btn-game {
             background: linear-gradient(180deg, #facc15 0%, #eab308 100%);
-            border: 3px solid #000;
-            box-shadow: 0 5px 0 #000;
+            border: 2px solid #000;
+            box-shadow: 0 3px 0 #000;
             transition: all 0.1s ease;
         }
         .btn-game:active {
-            transform: translateY(4px);
+            transform: translateY(2px);
             box-shadow: 0 1px 0 #000;
         }
+        /* Nút điều khiển bán trong suốt, nhỏ gọn trên điện thoại không che tầm nhìn */
         .btn-control {
-            background: rgba(255, 255, 255, 0.85);
-            border: 3px solid #1e293b;
-            box-shadow: 0 4px 0 #1e293b;
-            backdrop-filter: blur(4px);
-            transition: transform 0.08s;
+            background: rgba(15, 23, 42, 0.52);
+            color: #f8fafc;
+            border: 1.5px solid rgba(255, 255, 255, 0.45);
+            box-shadow: 0 2px 0 rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(2px);
+            opacity: 0.58;
+            transition: transform 0.06s, opacity 0.1s, background-color 0.1s;
+            touch-action: none;
         }
         .btn-control:active, .btn-control.active {
-            transform: translateY(3px);
-            box-shadow: 0 1px 0 #1e293b;
-            background: #fde047;
+            transform: translateY(2px) scale(0.96);
+            box-shadow: 0 0px 0 rgba(0, 0, 0, 0.5);
+            background: rgba(250, 204, 21, 0.88);
+            color: #0f172a;
+            border-color: #000;
+            opacity: 0.95;
+        }
+        /* Kích thước nút trên điện thoại: Chế độ Nhỏ (mặc định) vs Siêu nhỏ vs Ẩn */
+        .ctrl-size-compact .btn-control {
+            min-width: 48px;
+            height: 38px;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+        .ctrl-size-mini .btn-control {
+            min-width: 38px;
+            height: 32px;
+            padding: 1px 5px;
+            border-radius: 8px;
+            opacity: 0.42;
+        }
+        .ctrl-size-mini .ctrl-label-sub {
+            display: none !important;
+        }
+        .ctrl-size-hidden .btn-control {
+            display: none !important;
+        }
+        @media (min-width: 640px) {
+            .ctrl-size-compact .btn-control {
+                min-width: 110px;
+                height: 46px;
+                padding: 6px 14px;
+                border-radius: 14px;
+                opacity: 0.78;
+            }
         }
         @keyframes floatSlow {
             0%, 100% { transform: translateY(0px) rotate(-1deg); }
@@ -74,58 +140,62 @@
 <body>
 
 <div id="game-container">
-    <!-- Top HUD -->
-    <div class="absolute top-3 left-3 right-3 z-20 flex flex-wrap justify-between items-center gap-2 pointer-events-none">
+    <!-- Top HUD (Tối ưu siêu gọn trên điện thoại để không che tranh tường Meme & chậu hoa rơi) -->
+    <div class="absolute top-1.5 left-1.5 right-1.5 sm:top-3 sm:left-3 sm:right-3 z-20 flex flex-wrap justify-between items-center gap-1 sm:gap-2 pointer-events-none">
         <!-- Distance, Best Record, Checkpoint & Progress -->
-        <div class="bg-slate-900/90 border-2 border-yellow-400 rounded-2xl px-4 py-2 flex flex-wrap items-center gap-3 shadow-lg pointer-events-auto">
+        <div class="bg-slate-900/80 border border-yellow-400/90 sm:border-2 rounded-xl sm:rounded-2xl px-2 py-1 sm:px-3.5 sm:py-1.5 flex items-center gap-1.5 sm:gap-3 shadow-md pointer-events-auto backdrop-blur-sm">
             <div class="flex flex-col">
-                <div class="text-yellow-400 text-2xl font-extrabold comic-badge leading-none" id="dist-label">0.0m</div>
-                <div class="text-[11px] font-extrabold text-emerald-400 mt-0.5" id="checkpoint-label">🚩 Mốc lưu: 0m</div>
+                <div class="text-yellow-400 text-sm sm:text-2xl font-extrabold comic-badge leading-none" id="dist-label">0.0m</div>
+                <div class="text-[9px] sm:text-[11px] font-extrabold text-emerald-400 leading-tight" id="checkpoint-label">🚩 Mốc: 0m</div>
             </div>
-            <div class="h-8 w-0.5 bg-slate-700 hidden sm:block"></div>
+            <div class="h-5 sm:h-7 w-[1px] bg-slate-700"></div>
             <div class="flex flex-col">
-                <span class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">🏆 Kỷ Lục Xa Nhất</span>
-                <span class="text-amber-300 font-extrabold text-sm sm:text-base leading-tight" id="best-label">0.0m</span>
+                <span class="text-[8px] sm:text-[10px] uppercase tracking-tighter text-slate-400 font-bold leading-none">🏆 Kỷ Lục</span>
+                <span class="text-amber-300 font-extrabold text-xs sm:text-base leading-tight" id="best-label">0.0m</span>
             </div>
-            <div class="w-32 sm:w-48 h-4 bg-slate-700 rounded-full overflow-hidden border border-slate-500 relative">
+            <div class="w-16 sm:w-40 h-2.5 sm:h-4 bg-slate-700 rounded-full overflow-hidden border border-slate-500 relative hidden xs:block sm:block">
                 <div id="checkpoint-bar" class="h-full bg-emerald-600/60 w-0 absolute left-0 top-0"></div>
                 <div id="progress-bar" class="h-full bg-gradient-to-r from-green-400 via-yellow-400 to-red-500 w-0 transition-all duration-75 relative z-10"></div>
-                <div class="absolute inset-0 z-20 flex justify-between px-1.5 items-center text-[10px] font-bold text-white/90">
+                <div class="absolute inset-0 z-20 hidden sm:flex justify-between px-1.5 items-center text-[9px] font-bold text-white/90">
                     <span>0m</span>
-                    <span>Đích 100m</span>
+                    <span>100m</span>
                 </div>
             </div>
         </div>
 
-        <!-- Balance Meter (Góc Nghiêng) -->
-        <div class="bg-slate-900/90 border-2 border-white/80 rounded-2xl px-4 py-1.5 flex flex-col items-center shadow-lg">
-            <span class="text-[11px] uppercase tracking-wider text-slate-300 font-bold">Độ Thăng Bằng Tháp Hàng</span>
-            <div class="w-40 sm:w-52 h-4 bg-gradient-to-r from-red-600 via-green-400 to-red-600 rounded-full border border-black relative mt-1">
-                <!-- Safe zone markers -->
+        <!-- Balance Meter (Góc Nghiêng thu gọn trên Mobile) -->
+        <div class="bg-slate-900/80 border border-white/70 sm:border-2 rounded-xl sm:rounded-2xl px-2 py-0.5 sm:px-3.5 sm:py-1 flex flex-col items-center shadow-md backdrop-blur-sm">
+            <span class="text-[8px] sm:text-[10px] uppercase tracking-wider text-slate-300 font-bold leading-none">Thăng Bằng</span>
+            <div class="w-20 sm:w-44 h-2.5 sm:h-3.5 bg-gradient-to-r from-red-600 via-green-400 to-red-600 rounded-full border border-black relative mt-0.5">
                 <div class="absolute top-0 bottom-0 left-1/4 w-0.5 bg-black/50"></div>
                 <div class="absolute top-0 bottom-0 right-1/4 w-0.5 bg-black/50"></div>
-                <!-- Needle -->
                 <div id="balance-needle" class="
-                    w-3 h-6 -top-1 bg-yellow-300 border-2 border-black rounded-full absolute left-1/2 -translate-x-1/2 transition-transform duration-75
+                    w-2 sm:w-3 h-3.5 sm:h-5 -top-0.5 bg-yellow-300 border border-black rounded-full absolute left-1/2 -translate-x-1/2 transition-transform duration-75
                 "></div>
             </div>
         </div>
 
-        <!-- Sound & Horn & Reset -->
-        <div class="flex items-center gap-2 pointer-events-auto">
-            <button id="btn-horn" class="btn-game px-3 py-1.5 rounded-xl font-extrabold text-sm text-black flex items-center gap-1" title="Bấm còi inh ỏi (Phím H)">
-                📯 Còi Tin Tin
+        <!-- Sound, Horn, Orientation Toggle & Mobile Button Size Toggle -->
+        <div class="flex items-center gap-1 sm:gap-1.5 pointer-events-auto">
+            <button id="btn-orientation" class="bg-indigo-600/90 hover:bg-indigo-500 text-white border border-indigo-300/80 px-1.5 py-1 sm:px-2.5 sm:py-1 rounded-lg sm:rounded-xl font-extrabold text-[10px] sm:text-xs shadow flex items-center gap-0.5" title="Chuyển đổi Xoay Ngang (Landscape) / Xoay Dọc (Portrait)">
+                🔄 <span id="orientation-label">Ngang/Dọc</span>
             </button>
-            <button id="btn-mute" class="bg-slate-800 hover:bg-slate-700 text-white border-2 border-slate-500 px-3 py-1.5 rounded-xl font-bold text-sm">
-                🔊 Âm thanh: BẬT
+            <button id="btn-ctrl-mode" class="bg-slate-800/85 hover:bg-slate-700 text-amber-300 border border-amber-400/70 px-1.5 py-1 sm:px-2.5 sm:py-1 rounded-lg sm:rounded-xl font-bold text-[10px] sm:text-xs shadow" title="Đổi kích thước nút điều khiển trên điện thoại">
+                📱 Nút: Nhỏ
+            </button>
+            <button id="btn-horn" class="btn-game px-2 py-1 sm:px-3 sm:py-1 rounded-lg sm:rounded-xl font-extrabold text-[10px] sm:text-xs text-black flex items-center gap-0.5" title="Bấm còi inh ỏi (Phím H)">
+                📯 <span class="hidden sm:inline">Còi</span>
+            </button>
+            <button id="btn-mute" class="bg-slate-800/85 hover:bg-slate-700 text-white border border-slate-500 px-1.5 py-1 sm:px-2.5 sm:py-1 rounded-lg sm:rounded-xl font-bold text-[10px] sm:text-xs">
+                🔊
             </button>
         </div>
     </div>
 
-    <!-- Event Warning Banner -->
+    <!-- Event Warning Banner (Nhỏ gọn, không che tầm nhìn) -->
     <div id="warning-banner" class="
-        absolute top-20 z-20 pointer-events-none opacity-0 transition-opacity duration-200
-        bg-red-600 text-white border-2 border-black px-4 py-1 rounded-full font-extrabold text-sm sm:text-base shadow-lg comic-badge
+        absolute top-11 sm:top-16 z-20 pointer-events-none opacity-0 transition-opacity duration-200
+        bg-red-600/90 text-white border border-black px-2.5 py-0.5 rounded-full font-extrabold text-[10px] sm:text-sm shadow comic-badge max-w-[92vw] truncate
     ">
         ⚠️ COI CHỪNG CHƯỚNG NGẠI VẬT!
     </div>
@@ -133,22 +203,48 @@
     <!-- Canvas -->
     <canvas id="gameCanvas"></canvas>
 
-    <!-- Bottom On-Screen Touch/Mouse Controls -->
-    <div class="absolute bottom-4 left-0 right-0 z-20 flex justify-center items-center gap-3 sm:gap-6 px-4 pointer-events-none">
-        <button id="ctrl-left" class="btn-control pointer-events-auto px-4 py-3 sm:px-6 sm:py-3.5 rounded-2xl font-extrabold text-slate-900 flex flex-col items-center min-w-[105px] sm:min-w-[135px]">
-            <span class="text-lg sm:text-xl">⬅️ NGẢ TRÁI</span>
-            <span class="text-[11px] text-slate-600 font-bold">Chuột Trái / Phím A</span>
-        </button>
+    <!-- Bottom Ergonomic Thumb Controls (Nhỏ gọn 48x38px, bán trong suốt, chia 2 góc mép dưới cho 2 ngón cái) -->
+    <div id="touch-controls-bar" class="ctrl-size-compact absolute bottom-1.5 sm:bottom-3 left-2 right-2 z-20 flex justify-between items-end pointer-events-none">
+        <!-- Cụm ngón cái trái: Nghiêng Trái / Phanh & Nút Cúi Phụ -->
+        <div class="flex items-center gap-1.5 sm:gap-2.5 pointer-events-auto">
+            <button id="ctrl-left" class="btn-control font-extrabold flex flex-col items-center justify-center">
+                <div class="flex items-center gap-0.5 text-xs sm:text-base leading-none">
+                    <span>⬅️</span>
+                    <span class="ctrl-label-sub text-[10px] sm:text-xs">TRÁI</span>
+                </div>
+                <span class="hidden sm:inline text-[9px] opacity-75 font-semibold">Phím A / Chuột Trái</span>
+            </button>
+            <button id="ctrl-duck-left" class="btn-control font-extrabold flex sm:hidden flex-col items-center justify-center" title="Cúi đầu né dây điện">
+                <div class="flex items-center gap-0.5 text-xs leading-none">
+                    <span>⏬</span>
+                    <span class="ctrl-label-sub text-[10px]">CÚI</span>
+                </div>
+            </button>
+        </div>
 
-        <button id="ctrl-duck" class="btn-control pointer-events-auto px-4 py-3 sm:px-6 sm:py-3.5 rounded-2xl font-extrabold text-slate-900 flex flex-col items-center min-w-[110px] sm:min-w-[140px]">
-            <span class="text-lg sm:text-xl">⏬ CÚI / NHỔM</span>
-            <span class="text-[11px] text-slate-600 font-bold">Phím Space / W</span>
-        </button>
+        <!-- Chỉ dẫn khi ở chế độ Ẩn nút -->
+        <div id="touch-zone-hint" class="hidden text-[10px] text-white/60 bg-slate-900/50 px-2 py-0.5 rounded-full border border-white/20">
+            Chạm ме́р Trái: Ngả Trái | Giữa: Cúi | Phải: Rướn Ga
+        </div>
 
-        <button id="ctrl-right" class="btn-control pointer-events-auto px-4 py-3 sm:px-6 sm:py-3.5 rounded-2xl font-extrabold text-slate-900 flex flex-col items-center min-w-[105px] sm:min-w-[135px]">
-            <span class="text-lg sm:text-xl">RƯỚN ГА ➡️</span>
-            <span class="text-[11px] text-slate-600 font-bold">Chuột Phải / Phím D</span>
-        </button>
+        <!-- Cụm ngón cái phải: Cúi Đầu Né & Rướn Ga / Nghiêng Phải -->
+        <div class="flex items-center gap-1.5 sm:gap-2.5 pointer-events-auto">
+            <button id="ctrl-duck" class="btn-control font-extrabold flex flex-col items-center justify-center">
+                <div class="flex items-center gap-0.5 text-xs sm:text-base leading-none">
+                    <span>⏬</span>
+                    <span class="ctrl-label-sub text-[10px] sm:text-xs">CÚI NÉ</span>
+                </div>
+                <span class="hidden sm:inline text-[9px] opacity-75 font-semibold">Phím Space / W</span>
+            </button>
+
+            <button id="ctrl-right" class="btn-control font-extrabold flex flex-col items-center justify-center">
+                <div class="flex items-center gap-0.5 text-xs sm:text-base leading-none">
+                    <span class="ctrl-label-sub text-[10px] sm:text-xs">GA</span>
+                    <span>➡️</span>
+                </div>
+                <span class="hidden sm:inline text-[9px] opacity-75 font-semibold">Phím D / Chuột Phải</span>
+            </button>
+        </div>
     </div>
 
     <!-- Start / Intro Modal -->
@@ -173,6 +269,12 @@
                 <p class="text-emerald-700 font-bold">🚩 <b>Mốc Checkpoint & Meme Tường 10m:</b> Qua mỗi vạch <b>10m, 20m... 100m</b> sẽ được lưu mốc hồi sinh và chiêm ngưỡng bức tường Meme huyền thoại mờ mờ!</p>
                 <p class="text-purple-700 font-bold">🔥 <b>Sau mốc 30m (Hẻm Sâu):</b> Xuất hiện Dép tổ ong rơi từ ban công, Xe cá viên chiên ngược chiều, Ống nước vỡ, Quạt công nghiệp & Loa kẹo kéo dập bass!</p>
                 <p class="text-red-600 font-bold">💥 Coi chừng: Bà hàng xóm đẩy ghế nhựa, Cậu Vàng lao ra táp lốp, bóng nhựa trẻ con sút ngang và dây điện thòng thấp!</p>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-2.5 mb-3">
+                <button id="btn-start-orientation" class="bg-indigo-600 hover:bg-indigo-500 text-white border-2 border-black py-2.5 px-4 rounded-2xl text-sm font-extrabold shadow-[0_3px_0_#000] flex items-center justify-center gap-1.5">
+                    🔄 Chế độ màn hình: <span id="start-orientation-text" class="text-yellow-300">Tự động</span>
+                </button>
             </div>
 
             <button id="btn-start" class="btn-game w-full py-3.5 rounded-2xl text-xl font-extrabold text-black uppercase tracking-wide">
@@ -481,9 +583,25 @@ const ctx = canvas.getContext('2d');
 
 let W = window.innerWidth;
 let H = window.innerHeight;
+let viewScale = 1;
+// Chế độ xoay màn hình: 'AUTO' (theo thiết bị), 'LANDSCAPE' (ép xoay ngang), 'PORTRAIT' (ép xoay dọc)
+let orientationMode = 'AUTO';
+let activeRotationDeg = 0; // 0, 90 (forced-landscape), -90 (forced-portrait)
+let isPortraitLayout = window.innerHeight > window.innerWidth;
+
 const PIXELS_PER_METER = 85; // 1m = 85px
 const GOAL_METERS = 100;
 const STORAGE_KEY_BEST = 'alleyway_ninja_best_meters_v1';
+
+function getGroundY() {
+    // Ở chế độ Dọc (Portrait), hạ thấp mặt đường một chút để mở rộng bầu trời nhìn rõ đỉnh tháp & chậu hoa rơi
+    return isPortraitLayout ? H * 0.79 : H * 0.77;
+}
+
+function getCameraLeadRatio() {
+    // Ở chế độ Dọc (Portrait), lùi xe về sát mép trái hơn (0.24) để nhìn xa hơn về phía trước
+    return isPortraitLayout ? 0.24 : 0.32;
+}
 
 function loadBestDistance() {
     try {
@@ -502,21 +620,122 @@ function saveBestDistance(meters) {
     }
 }
 
+function updateOrientationUI() {
+    const labelEl = document.getElementById('orientation-label');
+    const startTextEl = document.getElementById('start-orientation-text');
+    let text = 'Tự động';
+    if (orientationMode === 'LANDSCAPE') text = 'Ngang ↔️';
+    else if (orientationMode === 'PORTRAIT') text = 'Dọc ↕️';
+    else text = isPortraitLayout ? 'Dọc (Auto)' : 'Ngang (Auto)';
+
+    if (labelEl) labelEl.textContent = text;
+    if (startTextEl) startTextEl.textContent = text;
+}
+
+function applyOrientationMode(mode) {
+    orientationMode = mode;
+    const container = document.getElementById('game-container');
+    container.classList.remove('forced-landscape', 'forced-portrait');
+    activeRotationDeg = 0;
+
+    // Thử gọi Screen Orientation API nếu trình duyệt di động hỗ trợ ở chế độ toàn màn hình
+    try {
+        if (screen.orientation && screen.orientation.lock) {
+            if (mode === 'LANDSCAPE') {
+                screen.orientation.lock('landscape').catch(() => {});
+            } else if (mode === 'PORTRAIT') {
+                screen.orientation.lock('portrait').catch(() => {});
+            } else if (screen.orientation.unlock) {
+                screen.orientation.unlock();
+            }
+        }
+    } catch (e) {}
+
+    resizeCanvas();
+}
+
+function toggleOrientationMode() {
+    if (orientationMode === 'AUTO') {
+        // Nếu đang cầm dọc thì chuyển sang Ngang trước, nếu đang ngang thì chuyển sang Dọc
+        const currentlyPortrait = window.innerHeight > window.innerWidth;
+        applyOrientationMode(currentlyPortrait ? 'LANDSCAPE' : 'PORTRAIT');
+    } else if (orientationMode === 'LANDSCAPE') {
+        applyOrientationMode('PORTRAIT');
+    } else {
+        applyOrientationMode('LANDSCAPE');
+    }
+
+    const modeMsg = orientationMode === 'LANDSCAPE'
+        ? "↔️ ĐÃ CHUYỂN CHẾ ĐỘ XOAY NGANG!"
+        : "↕️ ĐÃ CHUYỂN CHẾ ĐỘ XOAY DỌC!";
+    addComicPopup(modeMsg, bike.x + 20, getGroundY() - 180, '#38bdf8', 1.05);
+}
+
 function resizeCanvas() {
-    W = window.innerWidth;
-    H = window.innerHeight;
+    const rawW = window.innerWidth;
+    const rawH = window.innerHeight;
+    const container = document.getElementById('game-container');
+    container.classList.remove('forced-landscape', 'forced-portrait');
+    activeRotationDeg = 0;
+
+    let effW = rawW;
+    let effH = rawH;
+
+    // Nếu người chơi chọn xoay Ngang nhưng điện thoại đang cầm Dọc (rawH > rawW) -> Ép xoay CSS 90 độ
+    if (orientationMode === 'LANDSCAPE' && rawH > rawW) {
+        container.classList.add('forced-landscape');
+        activeRotationDeg = 90;
+        effW = rawH;
+        effH = rawW;
+    } else if (orientationMode === 'PORTRAIT' && rawW > rawH) {
+        // Nếu chọn xoay Dọc nhưng màn hình đang Ngang -> Ép xoay CSS -90 độ
+        container.classList.add('forced-portrait');
+        activeRotationDeg = -90;
+        effW = rawH;
+        effH = rawW;
+    }
+
+    isPortraitLayout = effH > effW;
+
+    // Tự động thu nhỏ tỷ lệ camera trên màn hình điện thoại để thấy trọn vẹn tháp hàng, chậu hoa rơi và tranh tường Meme
+    if (isPortraitLayout) {
+        // Chế độ Dọc: Đảm bảo chiều ngang tối thiểu tương đương ~520px game để nhìn thấy chướng ngại vật phía trước
+        const scaleByW = Math.min(1, Math.max(0.54, effW / 540));
+        const scaleByH = Math.min(1, Math.max(0.65, effH / 640));
+        viewScale = Math.min(scaleByW, scaleByH);
+    } else if (effW < 760 || effH < 520) {
+        // Chế độ Ngang trên điện thoại: Đảm bảo chiều cao tối thiểu ~500px để không mất đỉnh tháp hàng
+        const scaleByW = Math.min(1, Math.max(0.62, effW / 720));
+        const scaleByH = Math.min(1, Math.max(0.56, effH / 520));
+        viewScale = Math.min(scaleByW, scaleByH);
+    } else {
+        viewScale = 1;
+    }
+
+    W = Math.round(effW / viewScale);
+    H = Math.round(effH / viewScale);
     canvas.width = W;
     canvas.height = H;
+    updateOrientationUI();
 }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
-// Điều khiển đầu vào
+// Điều khiển đầu vào (Tách biệt Bàn phím, Chuột và Đa chạm cảm ứng để không bao giờ bị kẹt nút trên điện thoại)
 const keys = {
     left: false,
     right: false,
     duck: false
 };
+const kbInput = { left: false, right: false, duck: false };
+const mouseInput = { left: false, right: false, duck: false };
+const touchInput = { left: false, right: false, duck: false };
+
+function syncInputState() {
+    keys.left = kbInput.left || mouseInput.left || touchInput.left;
+    keys.right = kbInput.right || mouseInput.right || touchInput.right;
+    keys.duck = kbInput.duck || mouseInput.duck || touchInput.duck;
+}
 
 // Trạng thái người chơi & xe máy + tháp hàng vật lý
 const game = {
@@ -763,11 +982,11 @@ function resetBikeToStart(useCheckpoint = false) {
     document.getElementById('taunt-overlay').style.opacity = '0';
     document.getElementById('taunt-overlay').classList.add('pointer-events-none');
     game.state = 'PLAYING';
-    game.cameraX = bike.x - W * 0.32;
+    game.cameraX = bike.x - W * getCameraLeadRatio();
     updateHUDLabels();
 
     if (useCheckpoint && game.checkpointMeters > 0) {
-        addComicPopup(`XUẤT PHÁT MỐC ${game.checkpointMeters}M! 🚩`, bike.x, H * 0.77 - 150, '#4ade80', 1.15);
+        addComicPopup(`XUẤT PHÁT MỐC ${game.checkpointMeters}M! 🚩`, bike.x, getGroundY() - 150, '#4ade80', 1.15);
     }
 }
 
@@ -797,7 +1016,7 @@ function triggerTowerCollapse(reasonText) {
     game.shakeIntensity = 14;
     audio.playCrashSound();
 
-    const groundY = H * 0.77;
+    const groundY = getGroundY();
     const rackX = bike.x - 28;
     const rackY = groundY - 46 + bike.y;
 
@@ -871,7 +1090,7 @@ function triggerTowerCollapse(reasonText) {
  * CẬP NHẬT VẬT LÝ MỖI KHUNG HÌNH (CON LẮC NGƯỢC + KHỚP ĐÀN HỒI + CHƯỚNG NGẠI VẬT)
  */
 function updatePhysics() {
-    const groundY = H * 0.77;
+    const groundY = getGroundY();
 
     // 1. Hiệu ứng khói bô xe và chữ comic
     for (let i = game.exhaustParticles.length - 1; i >= 0; i--) {
@@ -928,7 +1147,7 @@ function updatePhysics() {
                 resetBikeToStart(true);
             }
         }
-        game.cameraX += ((bike.x - W * 0.32) - game.cameraX) * 0.12;
+        game.cameraX += ((bike.x - W * getCameraLeadRatio()) - game.cameraX) * 0.12;
         return;
     }
 
@@ -1295,7 +1514,7 @@ function updatePhysics() {
     }
 
     // Cập nhật Camera mượt theo xe
-    const targetCamX = bike.x - W * 0.32;
+    const targetCamX = bike.x - W * getCameraLeadRatio();
     game.cameraX += (targetCamX - game.cameraX) * 0.14;
 
     // Cập nhật HUD Quãng đường, Mốc Checkpoint & Kỷ lục
@@ -1312,7 +1531,7 @@ function updatePhysics() {
  */
 function drawGame() {
     ctx.clearRect(0, 0, W, H);
-    const groundY = H * 0.77;
+    const groundY = getGroundY();
 
     ctx.save();
     // Hiệu ứng rung màn hình khi va chạm
@@ -2746,92 +2965,224 @@ function drawPlayerAndTower(groundY) {
 }
 
 /**
- * THIẾT LẬP SỰ KIỆN BÀN PHÍM, CHUỘT VÀ NÚT CẢM ỨNG TRÊN MÀN HÌNH
+ * THIẾT LẬP SỰ KIỆN BÀN PHÍM, CHUỘT VÀ ĐA CHẠM CẢM ỨNG TRÊN MÀN HÌNH ĐIỆN THOẠI
  */
 function setupControls() {
     const btnLeft = document.getElementById('ctrl-left');
     const btnRight = document.getElementById('ctrl-right');
     const btnDuck = document.getElementById('ctrl-duck');
+    const btnDuckLeft = document.getElementById('ctrl-duck-left');
+    const controlsBar = document.getElementById('touch-controls-bar');
+    const btnCtrlMode = document.getElementById('btn-ctrl-mode');
+    const btnOrientation = document.getElementById('btn-orientation');
+    const btnStartOrientation = document.getElementById('btn-start-orientation');
+    const touchZoneHint = document.getElementById('touch-zone-hint');
+
+    let ctrlModeIndex = 0; // 0: Nhỏ (compact), 1: Siêu nhỏ (mini), 2: Ẩn nút (hidden - chạm mép màn hình)
+    const ctrlModes = [
+        { cls: 'ctrl-size-compact', label: '📱 Nút: Nhỏ', showHint: false },
+        { cls: 'ctrl-size-mini', label: '📱 Nút: Siêu nhỏ', showHint: false },
+        { cls: 'ctrl-size-hidden', label: '📱 Nút: Ẩn (Chạm mép)', showHint: true }
+    ];
+
+    if (btnOrientation) {
+        btnOrientation.addEventListener('click', (e) => {
+            e.stopPropagation();
+            audio.init();
+            toggleOrientationMode();
+        });
+    }
+
+    if (btnStartOrientation) {
+        btnStartOrientation.addEventListener('click', (e) => {
+            e.stopPropagation();
+            audio.init();
+            toggleOrientationMode();
+        });
+    }
+
+    btnCtrlMode.addEventListener('click', (e) => {
+        e.stopPropagation();
+        ctrlModeIndex = (ctrlModeIndex + 1) % ctrlModes.length;
+        const m = ctrlModes[ctrlModeIndex];
+        controlsBar.classList.remove('ctrl-size-compact', 'ctrl-size-mini', 'ctrl-size-hidden');
+        controlsBar.classList.add(m.cls);
+        btnCtrlMode.textContent = m.label;
+        touchZoneHint.classList.toggle('hidden', !m.showHint);
+    });
 
     const updateBtnVisuals = () => {
+        syncInputState();
         btnLeft.classList.toggle('active', keys.left);
         btnRight.classList.toggle('active', keys.right);
         btnDuck.classList.toggle('active', keys.duck);
+        if (btnDuckLeft) btnDuckLeft.classList.toggle('active', keys.duck);
     };
 
-    // Bàn phím: A / Trái, D / Phải, Space / W
+    // 1. Bàn phím: A / Trái, D / Phải, Space / W
     window.addEventListener('keydown', (e) => {
-        if (e.code === 'KeyA' || e.code === 'ArrowLeft') keys.left = true;
-        if (e.code === 'KeyD' || e.code === 'ArrowRight') keys.right = true;
+        if (e.code === 'KeyA' || e.code === 'ArrowLeft') kbInput.left = true;
+        if (e.code === 'KeyD' || e.code === 'ArrowRight') kbInput.right = true;
         if (e.code === 'Space' || e.code === 'KeyW' || e.code === 'ArrowUp' || e.code === 'ArrowDown') {
-            keys.duck = true;
+            kbInput.duck = true;
         }
         if (e.code === 'KeyH') audio.playHorn();
         updateBtnVisuals();
     });
 
     window.addEventListener('keyup', (e) => {
-        if (e.code === 'KeyA' || e.code === 'ArrowLeft') keys.left = false;
-        if (e.code === 'KeyD' || e.code === 'ArrowRight') keys.right = false;
+        if (e.code === 'KeyA' || e.code === 'ArrowLeft') kbInput.left = false;
+        if (e.code === 'KeyD' || e.code === 'ArrowRight') kbInput.right = false;
         if (e.code === 'Space' || e.code === 'KeyW' || e.code === 'ArrowUp' || e.code === 'ArrowDown') {
-            keys.duck = false;
+            kbInput.duck = false;
         }
         updateBtnVisuals();
     });
 
-    // Chuột trực tiếp trên Canvas (Chuột Trái: Nghiêng Trái, Chuột Phải: Rướn Phải, Chuột Giữa: Cúi đầu)
+    // 2. Chuột trên máy tính (Chuột Trái: Nghiêng Trái, Chuột Phải: Rướn Phải, Chuột Giữa: Cúi đầu)
     canvas.addEventListener('contextmenu', e => e.preventDefault());
     canvas.addEventListener('mousedown', (e) => {
         audio.init();
-        if (e.button === 0) keys.left = true;
-        if (e.button === 1) { e.preventDefault(); keys.duck = true; }
-        if (e.button === 2) keys.right = true;
+        if (e.button === 0) mouseInput.left = true;
+        if (e.button === 1) { e.preventDefault(); mouseInput.duck = true; }
+        if (e.button === 2) mouseInput.right = true;
         updateBtnVisuals();
     });
 
     window.addEventListener('mouseup', (e) => {
-        if (e.button === 0) keys.left = false;
-        if (e.button === 1) keys.duck = false;
-        if (e.button === 2) keys.right = false;
+        if (e.button === 0) mouseInput.left = false;
+        if (e.button === 1) mouseInput.duck = false;
+        if (e.button === 2) mouseInput.right = false;
         updateBtnVisuals();
     });
 
-    // Nút bấm trên màn hình (Hỗ trợ cả chuột lẫn cảm ứng điện thoại)
-    const bindHoldButton = (el, keyName) => {
-        const start = (e) => {
+    // Hỗ trợ click chuột vào các nút trên màn hình PC
+    const bindMouseButton = (el, keyName) => {
+        if (!el) return;
+        el.addEventListener('mousedown', (e) => {
             e.preventDefault();
+            e.stopPropagation();
             audio.init();
-            keys[keyName] = true;
+            mouseInput[keyName] = true;
             updateBtnVisuals();
-        };
-        const end = (e) => {
+        });
+        const stopMouse = (e) => {
             e.preventDefault();
-            keys[keyName] = false;
+            mouseInput[keyName] = false;
             updateBtnVisuals();
         };
-        el.addEventListener('mousedown', start);
-        el.addEventListener('touchstart', start, { passive: false });
-        el.addEventListener('mouseup', end);
-        el.addEventListener('mouseleave', end);
-        el.addEventListener('touchend', end);
-        el.addEventListener('touchcancel', end);
+        el.addEventListener('mouseup', stopMouse);
+        el.addEventListener('mouseleave', stopMouse);
     };
 
-    bindHoldButton(btnLeft, 'left');
-    bindHoldButton(btnRight, 'right');
-    bindHoldButton(btnDuck, 'duck');
+    bindMouseButton(btnLeft, 'left');
+    bindMouseButton(btnRight, 'right');
+    bindMouseButton(btnDuck, 'duck');
+    bindMouseButton(btnDuckLeft, 'duck');
+
+    // 3. Hệ thống Đa Chạm (Multi-Touch) mượt mà cho Điện Thoại
+    // Hỗ trợ tự động quy đổi tọa độ ngón tay kể cả khi màn hình đang ở chế độ Ép Xoay Ngang (90 độ) hoặc Ép Xoay Dọc (-90 độ)
+    const evaluateAllTouches = (e) => {
+        let tLeft = false;
+        let tRight = false;
+        let tDuck = false;
+
+        const rawW = window.innerWidth;
+        const rawH = window.innerHeight;
+
+        for (let i = 0; i < e.touches.length; i++) {
+            const t = e.touches[i];
+            const el = document.elementFromPoint(t.clientX, t.clientY);
+
+            // Nếu chạm vào các nút UI phía trên (Start, Retry, Mute, Horn, Mode, Orientation) thì bỏ qua không tính là điều khiển xe
+            if (el && (el.closest('#modal-start') || el.closest('#modal-win') || el.closest('#crash-action-buttons') || el.closest('#btn-horn') || el.closest('#btn-mute') || el.closest('#btn-ctrl-mode') || el.closest('#btn-orientation'))) {
+                continue;
+            }
+
+            if (el && el.closest('#ctrl-left')) {
+                tLeft = true;
+            } else if (el && el.closest('#ctrl-right')) {
+                tRight = true;
+            } else if (el && (el.closest('#ctrl-duck') || el.closest('#ctrl-duck-left'))) {
+                tDuck = true;
+            } else {
+                // Quy đổi tọa độ chạm theo hướng xoay của khung game
+                let localX = t.clientX;
+                let localY = t.clientY;
+                let effW = rawW;
+                let effH = rawH;
+
+                if (activeRotationDeg === 90) {
+                    // Đang ép xoay ngang 90 độ trên màn hình dọc
+                    localX = t.clientY;
+                    localY = rawW - t.clientX;
+                    effW = rawH;
+                    effH = rawW;
+                } else if (activeRotationDeg === -90) {
+                    // Đang ép xoay dọc -90 độ trên màn hình ngang
+                    localX = rawH - t.clientY;
+                    localY = t.clientX;
+                    effW = rawH;
+                    effH = rawW;
+                }
+
+                if (localY > effH * 0.22) {
+                    // 35% mép trái = Ngả Trái, 30% giữa = Cúi Đầu, 35% mép phải = Rướn Ga
+                    if (localX < effW * 0.35) {
+                        tLeft = true;
+                    } else if (localX > effW * 0.65) {
+                        tRight = true;
+                    } else {
+                        tDuck = true;
+                    }
+                }
+            }
+        }
+
+        touchInput.left = tLeft;
+        touchInput.right = tRight;
+        touchInput.duck = tDuck;
+        updateBtnVisuals();
+    };
+
+    const gameContainer = document.getElementById('game-container');
+    gameContainer.addEventListener('touchstart', (e) => {
+        const target = e.target;
+        // Cho phép bấm bình thường vào các nút chức năng Modal / HUD
+        if (target && (target.closest('button') && !target.closest('.btn-control'))) {
+            return;
+        }
+        e.preventDefault();
+        audio.init();
+        evaluateAllTouches(e);
+    }, { passive: false });
+
+    gameContainer.addEventListener('touchmove', (e) => {
+        const target = e.target;
+        if (target && (target.closest('button') && !target.closest('.btn-control'))) {
+            return;
+        }
+        e.preventDefault();
+        evaluateAllTouches(e);
+    }, { passive: false });
+
+    const handleTouchEnd = (e) => {
+        evaluateAllTouches(e);
+    };
+    gameContainer.addEventListener('touchend', handleTouchEnd, { passive: false });
+    gameContainer.addEventListener('touchcancel', handleTouchEnd, { passive: false });
 
     // Nút Còi & Âm thanh & Bắt đầu
     document.getElementById('btn-horn').addEventListener('click', () => {
         audio.init();
         audio.playHorn();
-        addComicPopup("TIN! TIN!! 📯", bike.x + 30, H * 0.77 - 95, '#fde047', 1.0);
+        addComicPopup("TIN! TIN!! 📯", bike.x + 30, getGroundY() - 95, '#fde047', 1.0);
     });
 
     document.getElementById('btn-mute').addEventListener('click', (e) => {
         audio.init();
         const isMuted = audio.toggleMute();
-        e.currentTarget.textContent = isMuted ? '🔇 Âm thanh: TẮT' : '🔊 Âm thanh: BẬT';
+        e.currentTarget.textContent = isMuted ? '🔇' : '🔊';
     });
 
     document.getElementById('btn-start').addEventListener('click', () => {
