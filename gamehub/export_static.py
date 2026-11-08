@@ -48,16 +48,11 @@ def main():
     games = conn.execute("SELECT * FROM games ORDER BY created_at DESC").fetchall()
     conn.close()
 
-    counts = {}
-    for g in games:
-        for x in (g["genres"] or "").split(","):
-            if x:
-                counts[x] = counts.get(x, 0) + 1
-    genre_counts = [(x, counts[x]) for x in A.GENRES if x in counts]
+    ctx = A.home_context(games)
 
     done, skipped = 0, []
     with A.app.test_request_context("/"):
-        write("index.html", render_template("index.html", games=games, genre_counts=genre_counts))
+        write("index.html", render_template("index.html", **ctx))
         for g in games:
             src = os.path.join(A.GAMES, g["id"] + ".html")
             if not os.path.exists(src):

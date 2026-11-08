@@ -14,6 +14,8 @@ th{color:var(--muted);font-weight:600}
 .acts{display:flex;gap:6px;flex-wrap:wrap}
 .acts form{margin:0}
 .hint{font-size:12px;color:var(--muted);margin-top:4px}
+.chk{display:flex;align-items:center;gap:8px;margin:16px 0 0;color:var(--text);font-size:14px;cursor:pointer}
+.chk input{width:auto;margin:0;accent-color:#ff6a3d}
 select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #333a6b;background:#12152a;color:var(--text);font:inherit}
 .or{text-align:center;color:var(--muted);margin:12px 0 0;font-size:13px}
 .gchk{display:flex;flex-wrap:wrap;gap:8px}
@@ -53,6 +55,10 @@ select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #333a6b;
           <option value="portrait" {% if cur_o == 'portrait' %}selected{% endif %}>Chỉ chơi dọc (khung 9:16)</option>
         </select>
         <div class="hint">Game ngang/dọc sẽ được đặt trong khung đúng tỉ lệ; trên điện thoại cầm sai hướng sẽ có nhắc xoay máy. Nên viết game co giãn theo 100% chiều rộng/cao của khung.</div>
+
+        <label class="chk"><input type="checkbox" name="hot" value="1" {% if edit and edit.hot %}checked{% endif %}> 🔥 Đánh dấu game HOT</label>
+        <label>Vị trí trong "🏆 Top game được yêu thích" (1–{{ TOP_MAX }}, để trống = không đưa vào top)</label>
+        <input type="number" name="top_rank" min="1" max="{{ TOP_MAX }}" value="{{ edit.top_rank if edit and edit.top_rank else '' }}">
 
         <label>Logo — ảnh vuông 1:1, khuyên dùng 512×512{% if edit %} (bỏ trống để giữ logo cũ){% endif %}</label>
         <input type="file" name="logo" accept="image/*">
@@ -112,7 +118,7 @@ select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #333a6b;
     <tr>
       <td><div class="lg">{% if g.logo %}<img src="{{ url_for('img', name=g.logo) }}">{% else %}{{ g.title[:1]|upper }}{% endif %}</div></td>
       <td><div class="tn">{% if g.image %}<img src="{{ url_for('img', name=g.image) }}">{% else %}{{ g.title[:1]|upper }}{% endif %}</div></td>
-      <td>{{ g.title }}<div class="tags" style="margin-top:4px">{% if g.orientation == 'landscape' %}<span class="tag">↔ Ngang</span>{% elif g.orientation == 'portrait' %}<span class="tag">↕ Dọc</span>{% endif %}{% for x in g.genres|glist %}<span class="tag">{{ x }}</span>{% endfor %}</div></td>
+      <td>{{ g.title }}<div class="tags" style="margin-top:4px">{% if g.hot %}<span class="tag hot">🔥 Hot</span>{% endif %}{% if g.top_rank %}<span class="tag">🏆 Top {{ g.top_rank }}</span>{% endif %}{% if g.orientation == 'landscape' %}<span class="tag">↔ Ngang</span>{% elif g.orientation == 'portrait' %}<span class="tag">↕ Dọc</span>{% endif %}{% for x in g.genres|glist %}<span class="tag">{{ x }}</span>{% endfor %}</div></td>
       <td>{{ p[0] }}</td>
       <td>{{ p[1] }}</td>
       <td><b>{{ g.plays }}</b></td>

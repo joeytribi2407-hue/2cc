@@ -25,6 +25,18 @@
 /* Ảnh intro tỉ lệ 16:9 */
 .banner{position:relative;aspect-ratio:16/9;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:64px;font-weight:800;overflow:hidden}
 .banner img{width:100%;height:100%;object-fit:cover;display:block}
+.hotb{position:absolute;top:10px;left:10px;z-index:2;background:linear-gradient(135deg,#ff6a3d,#ff2e63);color:#fff;font-size:11px;font-weight:800;letter-spacing:.3px;padding:4px 10px;border-radius:99px;box-shadow:0 2px 10px rgba(255,70,70,.45)}
+.top{margin:0 0 24px}
+.top h2{font-size:20px;margin:0 0 12px}
+.toplist{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.topitem{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:var(--r);background:linear-gradient(135deg,rgba(124,92,255,.22),rgba(0,212,180,.12));border:1px solid #3a4175;transition:.18s}
+.topitem:hover{border-color:var(--accent);transform:translateY(-2px)}
+.medal{flex:none;width:34px;text-align:center;font-size:26px;font-weight:800}
+.tlogo{flex:none;width:52px;height:52px;border-radius:12px;overflow:hidden;background:linear-gradient(135deg,var(--accent2),var(--accent));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:22px}
+.tlogo img{width:100%;height:100%;object-fit:cover;display:block}
+.tinfo{min-width:0;display:flex;flex-direction:column;gap:2px}
+.tinfo b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tinfo small{color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ori{position:absolute;top:10px;right:10px;background:rgba(0,0,0,.65);color:#fff;font-size:11px;font-weight:600;padding:4px 10px;border-radius:99px;backdrop-filter:blur(4px)}
 .head{display:flex;gap:12px;align-items:flex-end;padding:0 16px;margin-top:-30px;position:relative}
 /* Logo vuông 1:1 */
@@ -44,10 +56,25 @@
 </div>
 
 {% if games %}
+{% if top_games %}
+<section class="top">
+  <h2>🏆 Top game được yêu thích</h2>
+  <div class="toplist">
+    {% for g in top_games %}
+    <a class="topitem" href="{{ url_for('play', gid=g.id) }}">
+      <span class="medal">{% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ loop.index }}{% endif %}</span>
+      <span class="tlogo">{% if g.logo %}<img src="{{ url_for('img', name=g.logo) }}" alt="">{% else %}{{ g.title[:1]|upper }}{% endif %}</span>
+      <span class="tinfo"><b>{{ g.title }}</b><small>{{ (g.genres|glist)|join(' · ') }}</small></span>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
 <div class="toolbar">
   <input id="q" type="search" placeholder="Tìm game theo tên...">
   <select id="sort" aria-label="Sắp xếp">
     <option value="new">Mới nhất</option>
+    <option value="hotfirst">🔥 Hot trước</option>
     {% if not STATIC_EXPORT %}<option value="hot">Chơi nhiều nhất</option>{% endif %}
     <option value="az">Tên A → Z</option>
   </select>
@@ -60,6 +87,7 @@
 {% if genre_counts %}
 <div class="chips" id="chips">
   <button class="chip on" data-g="">Tất cả<small>{{ games|length }}</small></button>
+  {% if hot_count %}<button class="chip" data-g="__hot">🔥 Hot<small>{{ hot_count }}</small></button>{% endif %}
   {% for name, n in genre_counts %}<button class="chip" data-g="{{ name }}">{{ name }}<small>{{ n }}</small></button>{% endfor %}
 </div>
 {% endif %}
@@ -68,8 +96,9 @@
 <div class="grid" id="grid">
   {% for g in games %}
   <a class="card" href="{{ url_for('play', gid=g.id) }}"
-     data-t="{{ g.title|lower }}" data-g="{{ g.genres }}" data-p="{{ g.plays }}" data-d="{{ g.created_at }}" data-o="{{ g.orientation }}">
+     data-t="{{ g.title|lower }}" data-g="{{ g.genres }}" data-p="{{ g.plays }}" data-d="{{ g.created_at }}" data-o="{{ g.orientation }}" data-h="{{ 1 if g.hot else 0 }}">
     <div class="banner">
+      {% if g.hot %}<span class="hotb">🔥 HOT</span>{% endif %}
       {% if g.orientation == 'landscape' %}<span class="ori">↔ Ngang</span>{% elif g.orientation == 'portrait' %}<span class="ori">↕ Dọc</span>{% endif %}
       {% if g.image %}<img src="{{ url_for('img', name=g.image) }}" alt="" loading="lazy">{% else %}{{ g.title[:1]|upper }}{% endif %}
     </div>
@@ -105,12 +134,13 @@
     var v=q.value.trim().toLowerCase(), n=0, s=sortSel.value;
     cards.sort(function(a,b){
       if(s==='hot') return (b.dataset.p-a.dataset.p)||(a.dataset.d<b.dataset.d?1:-1);
+      if(s==='hotfirst') return (b.dataset.h-a.dataset.h)||(a.dataset.d<b.dataset.d?1:-1);
       if(s==='az') return a.dataset.t.localeCompare(b.dataset.t,'vi');
       return a.dataset.d<b.dataset.d?1:-1;
     });
     cards.forEach(function(c){
       grid.appendChild(c);
-      var okG=!genre||(','+c.dataset.g+',').indexOf(','+genre+',')>-1;
+      var okG=!genre||(genre==='__hot'?c.dataset.h==='1':(','+c.dataset.g+',').indexOf(','+genre+',')>-1);
       var okT=!v||c.dataset.t.indexOf(v)>-1;
       var okO=!oriSel.value||c.dataset.o===oriSel.value;
       c.style.display=(okG&&okT&&okO)?'':'none'; if(okG&&okT&&okO)n++;

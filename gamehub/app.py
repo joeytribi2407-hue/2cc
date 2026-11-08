@@ -35,6 +35,7 @@ GENRES = ["Hành động", "Phiêu lưu", "Giải đố", "Chiến thuật", "Ar
           "Âm nhạc", "Trẻ em"]
 MAX_GENRES = 3
 ORIENTS = ("any", "landscape", "portrait")  # tự do / chỉ ngang / chỉ dọc
+TOP_MAX = 5  # tối đa 5 game trong mục "Top game được yêu thích"
 PLAY_COOLDOWN = 1800  # 1 người chơi lại cùng game trong 30 phút chỉ tính 1 lượt
 
 app = Flask(__name__)
@@ -78,6 +79,10 @@ def init_db():
         c.execute("ALTER TABLE games ADD COLUMN genres TEXT DEFAULT ''")
     if "orientation" not in cols:
         c.execute("ALTER TABLE games ADD COLUMN orientation TEXT DEFAULT 'any'")
+    if "hot" not in cols:
+        c.execute("ALTER TABLE games ADD COLUMN hot INTEGER DEFAULT 0")
+    if "top_rank" not in cols:
+        c.execute("ALTER TABLE games ADD COLUMN top_rank INTEGER DEFAULT 0")
     c.execute("""CREATE TABLE IF NOT EXISTS plays_daily(
         game_id TEXT, day TEXT, n INTEGER DEFAULT 0, PRIMARY KEY(game_id, day))""")
     if not c.execute("SELECT 1 FROM settings WHERE key='admin_hash'").fetchone():
@@ -109,6 +114,7 @@ def csrf():
 app.jinja_env.globals["csrf"] = csrf
 app.jinja_env.globals["GENRES"] = GENRES
 app.jinja_env.globals["MAX_GENRES"] = MAX_GENRES
+app.jinja_env.globals["TOP_MAX"] = TOP_MAX
 
 
 @app.before_request
@@ -202,16 +208,24 @@ def list_backups():
 
 
 # ---------- public pages ----------
-@app.route("/")
-def index():
-    games = db().execute("SELECT * FROM games ORDER BY created_at DESC").fetchall()
+def home_context(games):
+    """Dữ liệu cho trang chủ (dùng chung cho bản chạy Flask và bản xuất tĩnh)."""
     counts = {}
     for g_ in games:
         for x in (g_["genres"] or "").split(","):
             if x:
                 counts[x] = counts.get(x, 0) + 1
-    genre_counts = [(x, counts[x]) for x in GENRES if x in counts]
-    return render_template("index.html", games=games, genre_counts=genre_counts)
+    top = sorted((g_ for g_ in games if g_["top_rank"]), key=lambda g_: g_["top_rank"])[:TOP_MAX]
+    return {"games": games,
+            "genre_counts": [(x, counts[x]) for x in GENRES if x in counts],
+            "top_games": top,
+            "hot_count": sum(1 for g_ in games if g_["hot"])}
+
+
+@app.route("/")
+def index():
+    games = db().execute("SELECT * FROM games ORDER BY created_at DESC").fetchall()
+    return render_template("index.html", **home_context(games))
 
 
 @app.route("/play/<gid>")
@@ -356,15 +370,24 @@ def save():
     ori = request.form.get("orientation", "any")
     if ori not in ORIENTS:
         ori = "any"
+    hot = 1 if request.form.get("hot") else 0
+    try:
+        top_rank = int(request.form.get("top_rank", "") or 0)
+    except ValueError:
+        top_rank = 0
+    if not 1 <= top_rank <= TOP_MAX:
+        top_rank = 0
 
     if row:
-        db().execute("UPDATE games SET title=?, description=?, image=?, logo=?, genres=?, orientation=? WHERE id=?",
-                     (title, desc, image, logo, gs, ori, gid))
+        db().execute("""UPDATE games SET title=?, description=?, image=?, logo=?, genres=?, orientation=?,
+                        hot=?, top_rank=? WHERE id=?""",
+                     (title, desc, image, logo, gs, ori, hot, top_rank, gid))
     else:
         gid = uuid.uuid4().hex[:8]
-        db().execute("""INSERT INTO games(id,title,description,image,logo,genres,orientation,plays,created_at)
-                        VALUES(?,?,?,?,?,?,?,0,?)""",
-                     (gid, title, desc, image, logo, gs, ori, datetime.now().isoformat(timespec="seconds")))
+        db().execute("""INSERT INTO games(id,title,description,image,logo,genres,orientation,hot,top_rank,plays,created_at)
+                        VALUES(?,?,?,?,?,?,?,?,?,0,?)""",
+                     (gid, title, desc, image, logo, gs, ori, hot, top_rank,
+                      datetime.now().isoformat(timespec="seconds")))
     if code is not None:
         with open(os.path.join(GAMES, gid + ".html"), "wb") as out:
             out.write(code)
@@ -451,13 +474,21 @@ def backup_restore():
         image, logo = restore_img(r.get("image")), restore_img(r.get("logo"))
         genres = ",".join(clean_genres(str(r.get("genres", "") or "").split(","))[:MAX_GENRES])
         ori = r.get("orientation") if r.get("orientation") in ORIENTS else "any"
-        db().execute("""INSERT INTO games(id,title,description,image,logo,genres,orientation,plays,created_at)
-                        VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET
+        hot = 1 if r.get("hot") else 0
+        try:
+            top_rank = int(r.get("top_rank", 0) or 0)
+        except (TypeError, ValueError):
+            top_rank = 0
+        if not 1 <= top_rank <= TOP_MAX:
+            top_rank = 0
+        db().execute("""INSERT INTO games(id,title,description,image,logo,genres,orientation,hot,top_rank,plays,created_at)
+                        VALUES(?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET
                         title=excluded.title, description=excluded.description,
                         image=excluded.image, logo=excluded.logo, genres=excluded.genres,
-                        orientation=excluded.orientation, plays=excluded.plays""",
+                        orientation=excluded.orientation, hot=excluded.hot,
+                        top_rank=excluded.top_rank, plays=excluded.plays""",
                      (gid, str(r.get("title", "Game"))[:100], str(r.get("description", ""))[:500],
-                      image, logo, genres, ori, int(r.get("plays", 0) or 0),
+                      image, logo, genres, ori, hot, top_rank, int(r.get("plays", 0) or 0),
                       r.get("created_at") or datetime.now().isoformat(timespec="seconds")))
         n += 1
     db().commit()

@@ -29,6 +29,7 @@ label{display:block;margin:12px 0 5px;font-size:13px;color:var(--muted)}
 .panel{background:var(--card);border-radius:var(--r);padding:20px;margin-bottom:22px;border:1px solid #2a3055}
 .muted{color:var(--muted)}
 .tags{display:flex;gap:6px;flex-wrap:wrap}
+.tag.hot{background:rgba(255,106,61,.2);border-color:rgba(255,130,70,.7);color:#ffd2b8;font-weight:700}
 .tag{font-size:11px;padding:3px 9px;border-radius:99px;background:rgba(124,92,255,.18);border:1px solid rgba(124,92,255,.45);color:#cfc6ff;white-space:nowrap}
 </style>
 
@@ -56,6 +57,18 @@ label{display:block;margin:12px 0 5px;font-size:13px;color:var(--muted)}
 /* Ảnh intro tỉ lệ 16:9 */
 .banner{position:relative;aspect-ratio:16/9;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:64px;font-weight:800;overflow:hidden}
 .banner img{width:100%;height:100%;object-fit:cover;display:block}
+.hotb{position:absolute;top:10px;left:10px;z-index:2;background:linear-gradient(135deg,#ff6a3d,#ff2e63);color:#fff;font-size:11px;font-weight:800;letter-spacing:.3px;padding:4px 10px;border-radius:99px;box-shadow:0 2px 10px rgba(255,70,70,.45)}
+.top{margin:0 0 24px}
+.top h2{font-size:20px;margin:0 0 12px}
+.toplist{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.topitem{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:var(--r);background:linear-gradient(135deg,rgba(124,92,255,.22),rgba(0,212,180,.12));border:1px solid #3a4175;transition:.18s}
+.topitem:hover{border-color:var(--accent);transform:translateY(-2px)}
+.medal{flex:none;width:34px;text-align:center;font-size:26px;font-weight:800}
+.tlogo{flex:none;width:52px;height:52px;border-radius:12px;overflow:hidden;background:linear-gradient(135deg,var(--accent2),var(--accent));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:22px}
+.tlogo img{width:100%;height:100%;object-fit:cover;display:block}
+.tinfo{min-width:0;display:flex;flex-direction:column;gap:2px}
+.tinfo b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tinfo small{color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ori{position:absolute;top:10px;right:10px;background:rgba(0,0,0,.65);color:#fff;font-size:11px;font-weight:600;padding:4px 10px;border-radius:99px;backdrop-filter:blur(4px)}
 .head{display:flex;gap:12px;align-items:flex-end;padding:0 16px;margin-top:-30px;position:relative}
 /* Logo vuông 1:1 */
@@ -86,10 +99,37 @@ label{display:block;margin:12px 0 5px;font-size:13px;color:var(--muted)}
 </div>
 
 
+
+<section class="top">
+  <h2>🏆 Top game được yêu thích</h2>
+  <div class="toplist">
+    
+    <a class="topitem" href="/play/d1abc78a/">
+      <span class="medal">🥇</span>
+      <span class="tlogo"><img src="/img/e74b7e8dcb724f76.webp" alt=""></span>
+      <span class="tinfo"><b>Contra Z-Shinobi</b><small>Hành động · Phiêu lưu · Nhập vai</small></span>
+    </a>
+    
+    <a class="topitem" href="/play/ee67e6a4/">
+      <span class="medal">🥈</span>
+      <span class="tlogo"><img src="/img/f0275e5322c44d36.jpg" alt=""></span>
+      <span class="tinfo"><b>Rồng rắn lên mây</b><small>Hành động · Nhập vai · Trẻ em</small></span>
+    </a>
+    
+    <a class="topitem" href="/play/01456bce/">
+      <span class="medal">🥉</span>
+      <span class="tlogo"><img src="/img/5858f0eb60a04041.png" alt=""></span>
+      <span class="tinfo"><b>Vua Đỗ Xe Hẻm Nhỏ (Alleyway Ninja)</b><small>Phiêu lưu · Đua xe · Trẻ em</small></span>
+    </a>
+    
+  </div>
+</section>
+
 <div class="toolbar">
   <input id="q" type="search" placeholder="Tìm game theo tên...">
   <select id="sort" aria-label="Sắp xếp">
     <option value="new">Mới nhất</option>
+    <option value="hotfirst">🔥 Hot trước</option>
     
     <option value="az">Tên A → Z</option>
   </select>
@@ -102,6 +142,7 @@ label{display:block;margin:12px 0 5px;font-size:13px;color:var(--muted)}
 
 <div class="chips" id="chips">
   <button class="chip on" data-g="">Tất cả<small>4</small></button>
+  
   <button class="chip" data-g="Hành động">Hành động<small>3</small></button><button class="chip" data-g="Phiêu lưu">Phiêu lưu<small>2</small></button><button class="chip" data-g="Đua xe">Đua xe<small>1</small></button><button class="chip" data-g="Nhập vai">Nhập vai<small>3</small></button><button class="chip" data-g="Trẻ em">Trẻ em<small>3</small></button>
 </div>
 
@@ -110,8 +151,9 @@ label{display:block;margin:12px 0 5px;font-size:13px;color:var(--muted)}
 <div class="grid" id="grid">
   
   <a class="card" href="/play/d1abc78a/"
-     data-t="contra z-shinobi" data-g="Hành động,Phiêu lưu,Nhập vai" data-p="0" data-d="2026-11-08T23:27:29" data-o="any">
+     data-t="contra z-shinobi" data-g="Hành động,Phiêu lưu,Nhập vai" data-p="0" data-d="2026-11-08T23:27:29" data-o="any" data-h="0">
     <div class="banner">
+      
       
       <img src="/img/4a441890c2d349ae.webp" alt="" loading="lazy">
     </div>
@@ -128,8 +170,9 @@ label{display:block;margin:12px 0 5px;font-size:13px;color:var(--muted)}
   </a>
   
   <a class="card" href="/play/ee67e6a4/"
-     data-t="rồng rắn lên mây" data-g="Hành động,Nhập vai,Trẻ em" data-p="1" data-d="2026-11-08T23:19:37" data-o="any">
+     data-t="rồng rắn lên mây" data-g="Hành động,Nhập vai,Trẻ em" data-p="1" data-d="2026-11-08T23:19:37" data-o="any" data-h="0">
     <div class="banner">
+      
       
       <img src="/img/1c9347fb67bb4333.jpg" alt="" loading="lazy">
     </div>
@@ -146,8 +189,9 @@ label{display:block;margin:12px 0 5px;font-size:13px;color:var(--muted)}
   </a>
   
   <a class="card" href="/play/d8847002/"
-     data-t="cá sấu lên bờ" data-g="Hành động,Nhập vai,Trẻ em" data-p="1" data-d="2026-11-08T23:08:24" data-o="landscape">
+     data-t="cá sấu lên bờ" data-g="Hành động,Nhập vai,Trẻ em" data-p="1" data-d="2026-11-08T23:08:24" data-o="landscape" data-h="0">
     <div class="banner">
+      
       <span class="ori">↔ Ngang</span>
       <img src="/img/32b8bc6ba70b458b.webp" alt="" loading="lazy">
     </div>
@@ -164,8 +208,9 @@ label{display:block;margin:12px 0 5px;font-size:13px;color:var(--muted)}
   </a>
   
   <a class="card" href="/play/01456bce/"
-     data-t="vua đỗ xe hẻm nhỏ (alleyway ninja)" data-g="Phiêu lưu,Đua xe,Trẻ em" data-p="5" data-d="2026-11-04T11:07:18" data-o="landscape">
+     data-t="vua đỗ xe hẻm nhỏ (alleyway ninja)" data-g="Phiêu lưu,Đua xe,Trẻ em" data-p="5" data-d="2026-11-04T11:07:18" data-o="landscape" data-h="0">
     <div class="banner">
+      
       <span class="ori">↔ Ngang</span>
       <img src="/img/07b884de7a784843.png" alt="" loading="lazy">
     </div>
@@ -196,12 +241,13 @@ label{display:block;margin:12px 0 5px;font-size:13px;color:var(--muted)}
     var v=q.value.trim().toLowerCase(), n=0, s=sortSel.value;
     cards.sort(function(a,b){
       if(s==='hot') return (b.dataset.p-a.dataset.p)||(a.dataset.d<b.dataset.d?1:-1);
+      if(s==='hotfirst') return (b.dataset.h-a.dataset.h)||(a.dataset.d<b.dataset.d?1:-1);
       if(s==='az') return a.dataset.t.localeCompare(b.dataset.t,'vi');
       return a.dataset.d<b.dataset.d?1:-1;
     });
     cards.forEach(function(c){
       grid.appendChild(c);
-      var okG=!genre||(','+c.dataset.g+',').indexOf(','+genre+',')>-1;
+      var okG=!genre||(genre==='__hot'?c.dataset.h==='1':(','+c.dataset.g+',').indexOf(','+genre+',')>-1);
       var okT=!v||c.dataset.t.indexOf(v)>-1;
       var okO=!oriSel.value||c.dataset.o===oriSel.value;
       c.style.display=(okG&&okT&&okO)?'':'none'; if(okG&&okT&&okO)n++;

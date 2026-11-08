@@ -39,6 +39,7 @@ iframe{width:100%;display:block;border:0;background:#fff}
     <div>
       <h1>{{ game.title }}</h1>
       <div class="sub">{% if not STATIC_EXPORT %}<span>▶ {{ game.plays }} lượt chơi</span>{% endif %}
+        {% if game.hot %}<span class="tag hot">🔥 Hot</span>{% endif %}
         {% if o == 'landscape' %}<span class="tag">↔ Chơi ngang</span>{% elif o == 'portrait' %}<span class="tag">↕ Chơi dọc</span>{% endif %}
         {% for x in game.genres|glist %}<span class="tag">{{ x }}</span>{% endfor %}</div>
     </div>
