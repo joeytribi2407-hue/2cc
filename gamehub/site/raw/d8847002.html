@@ -1,0 +1,3444 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Cá Sấu Lên Bờ - 2D Chibi Action Game</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800;900&display=swap');
+
+  :root {
+    --wood-dark: #5c3310;
+    --wood-mid: #8b4d19;
+    --wood-light: #b86b28;
+    --parchment: #fdf5dc;
+    --parchment-border: #d9c08c;
+    --gold-top: #ffe659;
+    --gold-bot: #f59e0b;
+    --green-top: #4ade80;
+    --green-bot: #16a34a;
+    --red-top: #f87171;
+    --red-bot: #dc2626;
+    --blue-top: #38bdf8;
+    --blue-bot: #0284c7;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #1a472a;
+    font-family: 'Nunito', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #3b2314;
+    touch-action: none;
+  }
+
+  #gameWrapper {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at center, #2e7d32 0%, #1b4322 100%);
+    overflow: hidden;
+  }
+
+  #gameCanvas {
+    display: block;
+    background: #1ca3ec;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.55), 0 0 0 5px #fff, 0 0 0 9px #5c3310;
+    border-radius: 16px;
+    max-width: 100%;
+    max-height: 100%;
+  }
+
+  /* HUD OVERLAY */
+  #hudOverlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 12px 18px;
+    z-index: 10;
+  }
+
+  .hud-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .hud-group-left, .hud-group-center, .hud-group-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .hud-pill {
+    pointer-events: auto;
+    background: rgba(34, 24, 15, 0.78);
+    backdrop-filter: blur(4px);
+    border: 2.5px solid #e7b556;
+    border-radius: 999px;
+    padding: 5px 14px 5px 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #fff;
+    font-weight: 800;
+    font-size: 15px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.25);
+    text-shadow: 0 2px 2px rgba(0,0,0,0.6);
+  }
+
+  .hud-pill .icon {
+    width: 26px;
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(180deg, #ffe066, #f59f00);
+    border-radius: 50%;
+    font-size: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+    flex-shrink: 0;
+  }
+
+  .hud-pill.danger-badge {
+    background: rgba(185, 28, 28, 0.9);
+    border-color: #fca5a5;
+    animation: pulseDanger 0.75s infinite alternate;
+  }
+
+  .hud-pill.safe-badge {
+    background: rgba(21, 128, 61, 0.85);
+    border-color: #86efac;
+  }
+
+  @keyframes pulseDanger {
+    0% { transform: scale(1); box-shadow: 0 0 8px rgba(239, 68, 68, 0.6); }
+    100% { transform: scale(1.06); box-shadow: 0 0 20px rgba(239, 68, 68, 0.95); }
+  }
+
+  /* Stamina & Powerups strip */
+  .hud-subbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 6px;
+    gap: 10px;
+    pointer-events: none;
+  }
+
+  .stamina-box {
+    background: rgba(20, 20, 20, 0.72);
+    border: 2px solid #cbd5e1;
+    border-radius: 999px;
+    padding: 3px 10px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .stamina-track {
+    width: 90px;
+    height: 9px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+
+  .stamina-fill {
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(90deg, #facc15, #f97316);
+    transition: width 0.1s linear;
+  }
+
+  .active-buffs {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .buff-chip {
+    background: rgba(15, 23, 42, 0.82);
+    border: 2px solid #38bdf8;
+    color: #fff;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  }
+
+  /* Top right action buttons */
+  .icon-btn {
+    pointer-events: auto;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    border: 3px solid #5c3310;
+    background: linear-gradient(180deg, #ffcf4b 0%, #f59e0b 100%);
+    color: #451a03;
+    font-weight: 900;
+    font-size: 20px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 0 #78350f, 0 6px 12px rgba(0,0,0,0.4);
+    transition: transform 0.08s ease, filter 0.15s ease;
+  }
+
+  .icon-btn:hover {
+    filter: brightness(1.07);
+  }
+
+  .icon-btn:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 #78350f, 0 2px 6px rgba(0,0,0,0.4);
+  }
+
+  /* MISSION BANNER */
+  .mission-bar {
+    align-self: center;
+    background: rgba(253, 245, 220, 0.94);
+    border: 2.5px solid #8b4d19;
+    border-radius: 12px;
+    padding: 4px 14px;
+    font-size: 13px;
+    font-weight: 800;
+    color: #4a2508;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .mission-progress-pill {
+    background: #16a34a;
+    color: #fff;
+    padding: 1px 8px;
+    border-radius: 99px;
+    font-size: 12px;
+  }
+
+  /* MOBILE / TOUCH CONTROLS */
+  .touch-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    width: 100%;
+    padding: 4px 8px 8px 8px;
+    pointer-events: none;
+  }
+
+  .joystick-zone {
+    pointer-events: auto;
+    width: 124px;
+    height: 124px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,0.22) 0%, rgba(15, 23, 42, 0.45) 100%);
+    border: 3px solid rgba(255, 255, 255, 0.6);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.35), inset 0 0 12px rgba(255,255,255,0.25);
+    touch-action: none;
+  }
+
+  .joystick-arrows {
+    position: absolute;
+    inset: 6px;
+    pointer-events: none;
+    opacity: 0.55;
+  }
+
+  .joystick-knob {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #ffffff, #cbd5e1 70%, #94a3b8 100%);
+    border: 3px solid #475569;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.45);
+    transform: translate(0px, 0px);
+    pointer-events: none;
+    transition: transform 0.04s linear;
+  }
+
+  .action-buttons-zone {
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .sprint-btn {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #38bdf8, #0284c7 75%, #0369a1 100%);
+    border: 4px solid rgba(255,255,255,0.85);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.45), inset 0 2px 6px rgba(255,255,255,0.45);
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    text-shadow: 0 2px 3px rgba(0,0,0,0.5);
+    touch-action: none;
+    transition: transform 0.08s ease, filter 0.1s ease;
+  }
+
+  .sprint-btn.active, .sprint-btn:active {
+    transform: scale(0.92);
+    filter: brightness(1.15);
+    border-color: #fde047;
+    box-shadow: 0 0 20px rgba(250, 204, 21, 0.85);
+  }
+
+  .sprint-btn svg {
+    width: 38px;
+    height: 38px;
+    fill: #fff;
+    filter: drop-shadow(0 2px 2px rgba(0,0,0,0.4));
+  }
+
+  /* MODAL & MENU SCREENS */
+  .screen-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(10, 28, 18, 0.72);
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    z-index: 30;
+    opacity: 1;
+    transition: opacity 0.25s ease;
+  }
+
+  .screen-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* Concept-art inspired home container */
+  .home-layout {
+    width: 100%;
+    max-width: 1040px;
+    max-height: 95vh;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: 1.35fr 1fr;
+    gap: 18px;
+    align-items: stretch;
+  }
+
+  @media (max-width: 860px) {
+    .home-layout {
+      grid-template-columns: 1fr;
+      max-width: 540px;
+    }
+  }
+
+  .wood-board {
+    background: var(--parchment);
+    border: 4px solid var(--wood-dark);
+    border-radius: 22px;
+    padding: 20px;
+    position: relative;
+    box-shadow: 0 10px 0 var(--wood-dark), 0 16px 32px rgba(0,0,0,0.55), inset 0 0 0 3px var(--parchment-border);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .wood-header-sign {
+    background: linear-gradient(180deg, #b86b28 0%, #8b4d19 100%);
+    border: 3px solid #4a2508;
+    border-radius: 12px;
+    padding: 6px 18px;
+    color: #ffe885;
+    font-family: 'Fredoka', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    text-shadow: 0 2px 0 #3b1d05, 0 0 6px rgba(0,0,0,0.5);
+    box-shadow: 0 4px 0 #3b1d05;
+    display: inline-block;
+    align-self: flex-start;
+    margin-bottom: 12px;
+    transform: rotate(-1.5deg);
+  }
+
+  /* HERO LOGO SIGN */
+  .logo-hero {
+    text-align: center;
+    padding: 12px 10px 16px;
+    background: linear-gradient(180deg, #7dd3fc 0%, #38bdf8 55%, #0284c7 100%);
+    border: 4px solid var(--wood-dark);
+    border-radius: 18px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: inset 0 -8px 0 rgba(0,0,0,0.15);
+  }
+
+  .logo-wood-planks {
+    display: inline-block;
+    background: linear-gradient(180deg, #a45a21 0%, #7c3f10 50%, #5c2e09 100%);
+    border: 4px solid #3b1b04;
+    border-radius: 16px;
+    padding: 12px 28px 14px;
+    box-shadow: 0 7px 0 #3b1b04, 0 12px 20px rgba(0,0,0,0.45);
+    position: relative;
+    margin-top: 6px;
+  }
+
+  .logo-title-main {
+    font-family: 'Fredoka', sans-serif;
+    font-size: clamp(32px, 5vw, 50px);
+    font-weight: 700;
+    line-height: 1.02;
+    background: linear-gradient(180deg, #fff37a 0%, #facc15 45%, #ea580c 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 4px 0 #451a03) drop-shadow(0 6px 8px rgba(0,0,0,0.5));
+    letter-spacing: 1px;
+  }
+
+  .logo-title-sub {
+    font-family: 'Fredoka', sans-serif;
+    font-size: clamp(24px, 3.8vw, 36px);
+    font-weight: 700;
+    color: #ffffff;
+    text-shadow: 0 3px 0 #3b1b04, -2px -2px 0 #3b1b04, 2px -2px 0 #3b1b04, -2px 2px 0 #3b1b04, 2px 2px 0 #3b1b04;
+    margin-top: 2px;
+  }
+
+  .logo-tagline {
+    margin-top: 10px;
+    font-weight: 900;
+    font-size: 15px;
+    color: #fef08a;
+    text-shadow: 0 2px 0 #0c4a6e, 0 3px 6px rgba(0,0,0,0.5);
+  }
+
+  /* Character selector */
+  .char-select-row {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin: 12px 0;
+    flex-wrap: wrap;
+  }
+
+  .char-card {
+    flex: 1;
+    min-width: 95px;
+    background: #fffbeb;
+    border: 3px solid #d97706;
+    border-radius: 14px;
+    padding: 8px 6px;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+
+  .char-card:hover {
+    transform: translateY(-2px);
+  }
+
+  .char-card.selected {
+    background: #fef3c7;
+    border-color: #16a34a;
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.35), 0 4px 0 #15803d;
+    transform: translateY(-2px);
+  }
+
+  .char-swatch {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    margin: 0 auto 4px;
+    border: 2.5px solid #3b2314;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+
+  .char-name {
+    font-weight: 800;
+    font-size: 13px;
+    color: #3b2314;
+  }
+
+  .char-trait {
+    font-size: 11px;
+    color: #78350f;
+    font-weight: 700;
+  }
+
+  /* Buttons */
+  .menu-btn-stack {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 8px;
+  }
+
+  .game-btn {
+    border: 3.5px solid #3b1d05;
+    border-radius: 14px;
+    padding: 12px 16px;
+    font-family: 'Fredoka', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-shadow: 0 2px 0 rgba(0,0,0,0.35);
+    transition: transform 0.08s ease, filter 0.12s ease;
+  }
+
+  .game-btn:hover {
+    filter: brightness(1.06);
+  }
+
+  .game-btn:active {
+    transform: translateY(3px);
+  }
+
+  .game-btn.primary {
+    grid-column: 1 / -1;
+    font-size: 22px;
+    padding: 14px 20px;
+    background: linear-gradient(180deg, #4ade80 0%, #16a34a 100%);
+    color: #fff;
+    box-shadow: 0 5px 0 #14532d, 0 8px 16px rgba(0,0,0,0.35);
+  }
+
+  .game-btn.gold {
+    background: linear-gradient(180deg, #fde047 0%, #f59e0b 100%);
+    color: #451a03;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.5);
+    box-shadow: 0 4px 0 #92400e, 0 6px 12px rgba(0,0,0,0.25);
+  }
+
+  .game-btn.blue {
+    background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%);
+    color: #fff;
+    box-shadow: 0 4px 0 #075985, 0 6px 12px rgba(0,0,0,0.25);
+  }
+
+  .game-btn.red {
+    background: linear-gradient(180deg, #f87171 0%, #dc2626 100%);
+    color: #fff;
+    box-shadow: 0 4px 0 #7f1d1d, 0 6px 12px rgba(0,0,0,0.25);
+  }
+
+  /* Right column info cards */
+  .side-panels {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .rule-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    font-size: 13.5px;
+    font-weight: 700;
+  }
+
+  .rule-list li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .num-badge {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #f59e0b;
+    color: #fff;
+    font-weight: 900;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 0 #b45309;
+  }
+
+  .check-badge {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #22c55e;
+    color: #fff;
+    font-weight: 900;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 0 #15803d;
+  }
+
+  .key-cap {
+    display: inline-block;
+    background: #e2e8f0;
+    border: 2px solid #475569;
+    border-bottom-width: 4px;
+    border-radius: 6px;
+    padding: 2px 7px;
+    font-weight: 900;
+    font-size: 12px;
+    color: #1e293b;
+  }
+
+  /* MODAL DIALOG (Guide, Settings, Achievements, Pause, Game Over) */
+  .modal-card {
+    width: 100%;
+    max-width: 540px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin: 12px 0;
+  }
+
+  .stat-tile {
+    background: #fffbeb;
+    border: 2.5px solid #d9c08c;
+    border-radius: 12px;
+    padding: 10px;
+    text-align: center;
+  }
+
+  .stat-tile .val {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: #b45309;
+  }
+
+  .stat-tile .lbl {
+    font-size: 12px;
+    font-weight: 800;
+    color: #5c3310;
+  }
+
+  .setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1.5px dashed #d9c08c;
+    font-weight: 800;
+  }
+
+  .toggle-switch {
+    position: relative;
+    width: 54px;
+    height: 28px;
+    background: #cbd5e1;
+    border-radius: 99px;
+    border: 2px solid #475569;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .toggle-switch.on {
+    background: #22c55e;
+    border-color: #15803d;
+  }
+
+  .toggle-switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.15s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  }
+
+  .toggle-switch.on::after {
+    transform: translateX(26px);
+  }
+
+  .achievement-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    border-radius: 12px;
+    background: #fffbeb;
+    border: 2px solid #e2c893;
+    margin-bottom: 8px;
+    opacity: 0.65;
+  }
+
+  .achievement-item.unlocked {
+    opacity: 1;
+    background: #fef9c3;
+    border-color: #eab308;
+    box-shadow: 0 3px 0 #ca8a04;
+  }
+
+  /* Toast Banner for Round / Achievement / Mission */
+  #toastContainer {
+    position: absolute;
+    top: 72px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 25;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    pointer-events: none;
+  }
+
+  .game-toast {
+    background: linear-gradient(180deg, #fef08a 0%, #f59e0b 100%);
+    border: 3px solid #451a03;
+    color: #451a03;
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+    padding: 8px 20px;
+    border-radius: 999px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.45);
+    animation: toastPop 2.4s forwards;
+  }
+
+  @keyframes toastPop {
+    0% { opacity: 0; transform: translateY(-18px) scale(0.85); }
+    14% { opacity: 1; transform: translateY(0) scale(1.04); }
+    24% { transform: scale(1); }
+    82% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-14px); }
+  }
+
+  @media (max-width: 640px) {
+    .hud-pill { font-size: 13px; padding: 4px 10px 4px 7px; }
+    .hud-pill .icon { width: 22px; height: 22px; font-size: 13px; }
+    .mission-bar { font-size: 11.5px; padding: 3px 10px; }
+    .joystick-zone { width: 108px; height: 108px; }
+    .sprint-btn { width: 84px; height: 84px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="gameWrapper">
+  <canvas id="gameCanvas" width="1200" height="720"></canvas>
+
+  <!-- IN-GAME HUD OVERLAY -->
+  <div id="hudOverlay" class="hidden">
+    <div>
+      <div class="hud-top">
+        <div class="hud-group-left">
+          <div class="hud-pill" title="Thời gian vòng chơi">
+            <span class="icon">⏱️</span>
+            <span id="hudTime">00:45</span>
+          </div>
+          <div class="hud-pill" title="Điểm số">
+            <span class="icon">⭐</span>
+            <span id="hudScore">0</span>
+          </div>
+          <div class="hud-pill" title="Vòng chơi hiện tại">
+            <span class="icon">🚩</span>
+            <span>Vòng <span id="hudRound">1</span></span>
+          </div>
+        </div>
+
+        <div class="hud-group-center">
+          <div class="hud-pill" title="Số cá sấu dưới sông">
+            <span class="icon">🐊</span>
+            <span>Cá sấu: <span id="hudCrocs">1/1</span></span>
+          </div>
+          <div id="hudZoneStatus" class="hud-pill safe-badge">
+            <span id="hudZoneIcon">🏝️</span>
+            <span id="hudZoneText">TRÊN BỜ - AN TOÀN</span>
+          </div>
+        </div>
+
+        <div class="hud-group-right">
+          <button id="btnMuteHud" class="icon-btn" title="Bật/Tắt Âm Thanh" aria-label="Âm thanh">🔊</button>
+          <button id="btnPauseHud" class="icon-btn" title="Tạm Dừng (ESC)" aria-label="Tạm dừng">⏸️</button>
+        </div>
+      </div>
+
+      <div class="hud-subbar">
+        <div class="stamina-box">
+          <span>⚡ Thể lực</span>
+          <div class="stamina-track">
+            <div id="hudStaminaFill" class="stamina-fill"></div>
+          </div>
+        </div>
+
+        <div class="mission-bar">
+          <span>🎯 Nhiệm vụ: <span id="hudMissionText">Vượt sông 3 lần</span></span>
+          <span id="hudMissionProgress" class="mission-progress-pill">0/3</span>
+        </div>
+
+        <div id="hudActiveBuffs" class="active-buffs"></div>
+      </div>
+    </div>
+
+    <!-- TOUCH & ON-SCREEN CONTROLS -->
+    <div id="touchControlsBar" class="touch-controls">
+      <div id="joystickZone" class="joystick-zone" aria-label="Joystick di chuyển">
+        <svg class="joystick-arrows" viewBox="0 0 100 100">
+          <polygon points="50,6 42,18 58,18" fill="#fff"/>
+          <polygon points="50,94 42,82 58,82" fill="#fff"/>
+          <polygon points="6,50 18,42 18,58" fill="#fff"/>
+          <polygon points="94,50 82,42 82,58" fill="#fff"/>
+        </svg>
+        <div id="joystickKnob" class="joystick-knob"></div>
+      </div>
+
+      <div class="action-buttons-zone">
+        <button id="btnTouchBait" class="icon-btn" style="width:62px;height:62px;border-radius:50%;font-size:24px;" title="Thả mồi nhử (Phím E / Space)">🍖<span id="hudBaitCount" style="font-size:12px;margin-left:2px;">x1</span></button>
+        <button id="btnTouchSprint" class="sprint-btn" aria-label="Chạy nhanh">
+          <svg viewBox="0 0 24 24">
+            <path d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2V9.6l1.8-.7"/>
+          </svg>
+          <span>CHẠY NHANH</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST BANNER -->
+  <div id="toastContainer"></div>
+
+  <!-- HOME SCREEN OVERLAY -->
+  <div id="homeScreen" class="screen-overlay">
+    <div class="home-layout">
+      <!-- Left Main Board -->
+      <div class="wood-board">
+        <div>
+          <div class="logo-hero">
+            <div class="logo-wood-planks">
+              <div class="logo-title-main">CÁ SẤU</div>
+              <div class="logo-title-sub">Lên Bờ</div>
+            </div>
+            <div class="logo-tagline">🐊 Chạy nhanh, né cá sấu, leo lên bờ để an toàn! 🌊</div>
+          </div>
+
+          <div style="margin-top:14px;">
+            <div style="font-weight:900;font-size:14px;text-align:center;color:#5c3310;">CHỌN NHÂN VẬT CHIBI CỦA BẠN</div>
+            <div class="char-select-row" id="charSelectContainer">
+              <div class="char-card selected" data-char="0">
+                <div class="char-swatch" style="background:#22c55e;">👦</div>
+                <div class="char-name">Tí Áo Xanh Lá</div>
+                <div class="char-trait">Cân bằng • Linh hoạt</div>
+              </div>
+              <div class="char-card" data-char="1">
+                <div class="char-swatch" style="background:#3b82f6;">🧑</div>
+                <div class="char-name">Bin Áo Xanh Dương</div>
+                <div class="char-trait">+8% Tốc độ bơi</div>
+              </div>
+              <div class="char-card" data-char="2">
+                <div class="char-swatch" style="background:#ef4444;">👦</div>
+                <div class="char-name">Bo Áo Đỏ</div>
+                <div class="char-trait">+15% Thể lực chạy</div>
+              </div>
+              <div class="char-card" data-char="3">
+                <div class="char-swatch" style="background:#ec4899;">👧</div>
+                <div class="char-name">Na Áo Hồng</div>
+                <div class="char-trait">+15% Thời gian Buff</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:center;background:#fef3c7;border:2px solid #d97706;border-radius:12px;padding:8px 14px;margin-bottom:10px;font-weight:800;font-size:14px;">
+            <span>🏆 Kỷ lục điểm: <strong id="homeHighScore" style="color:#b45309;">0</strong></span>
+            <span>🌊 Tổng vượt sông: <strong id="homeTotalCross" style="color:#15803d;">0</strong></span>
+          </div>
+
+          <div class="menu-btn-stack">
+            <button id="btnStartGame" class="game-btn primary">▶️ BẮT ĐẦU CHƠI NGAY</button>
+            <button id="btnOpenGuide" class="game-btn gold">📖 HƯỚNG DẪN</button>
+            <button id="btnOpenSettings" class="game-btn blue">⚙️ CÀI ĐẶT</button>
+            <button id="btnOpenAchievements" class="game-btn gold" style="grid-column: 1 / -1;">🏅 NHIỆM VỤ & THÀNH TÍCH</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Concept Info Panels -->
+      <div class="side-panels">
+        <div class="wood-board" style="padding:14px 18px;">
+          <div class="wood-header-sign">Luật chơi</div>
+          <ul class="rule-list">
+            <li><span class="num-badge">1</span> <span>Di chuyển qua lại giữa <strong>2 bờ đất vàng an toàn</strong> và dòng sông.</span></li>
+            <li><span class="num-badge">2</span> <span>Khi ở dưới sông, <strong>Cá sấu AI</strong> sẽ phát hiện (<strong>!</strong>), dự đoán hướng bơi và lao tới đớp.</span></li>
+            <li><span class="num-badge">3</span> <span>Vượt sang bờ đối diện thành công để ghi điểm, tăng chuỗi Combo và hoàn thành vòng!</span></li>
+            <li><span class="num-badge">4</span> <span>Nhặt <strong>Giày tăng tốc, Khiên bảo vệ, Đồng hồ làm chậm, Mồi nhử</strong> để thoát hiểm!</span></li>
+          </ul>
+        </div>
+
+        <div class="wood-board" style="padding:14px 18px;">
+          <div class="wood-header-sign">Điểm nổi bật</div>
+          <ul class="rule-list">
+            <li><span class="check-badge">✓</span> <span>Gameplay dân gian kịch tính cùng đồng đội AI thông minh</span></li>
+            <li><span class="check-badge">✓</span> <span>Đồ họa 2D Chibi dễ thương, sóng nước & hiệu ứng sinh động</span></li>
+            <li><span class="check-badge">✓</span> <span>Cá sấu AI 5 trạng thái: Tuần tra, Phát hiện, Đuổi, Tấn công, Nghỉ</span></li>
+          </ul>
+        </div>
+
+        <div class="wood-board" style="padding:14px 18px;">
+          <div class="wood-header-sign">Điều khiển</div>
+          <div style="font-size:13px;font-weight:700;display:flex;flex-direction:column;gap:6px;">
+            <div>⌨️ <strong>Máy tính:</strong> <span class="key-cap">W</span><span class="key-cap">A</span><span class="key-cap">S</span><span class="key-cap">D</span> hoặc <span class="key-cap">↑</span><span class="key-cap">↓</span><span class="key-cap">←</span><span class="key-cap">→</span> di chuyển</div>
+            <div>🏃 <strong>Chạy nhanh:</strong> Nhấn giữ <span class="key-cap">Shift</span> • <strong>Thả mồi:</strong> <span class="key-cap">Space</span> / <span class="key-cap">E</span></div>
+            <div>📱 <strong>Điện thoại:</strong> Joystick ảo bên trái + nút <strong>Chạy nhanh</strong> bên phải</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GUIDE MODAL -->
+  <div id="guideModal" class="screen-overlay hidden">
+    <div class="wood-board modal-card">
+      <div class="wood-header-sign">📖 HƯỚNG DẪN CHI TIẾT</div>
+      <div style="font-size:14px;font-weight:700;line-height:1.55;display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+        <div style="background:#fffbeb;border:2px solid #d9c08c;border-radius:12px;padding:10px;">
+          <strong>🐊 5 Trạng Thái AI Cá Sấu:</strong>
+          <ul style="margin-left:18px;margin-top:4px;">
+            <li><strong>Idle (Tuần tra):</strong> Bơi lượn lờ quanh khúc sông.</li>
+            <li><strong>Detect (Phát hiện - Dấu chấm than vàng/đỏ !):</strong> Phát hiện bước chân dưới nước của người chơi.</li>
+            <li><strong>Chase (Truy đuổi):</strong> Dự đoán hướng di chuyển và tăng tốc đuổi theo mục tiêu.</li>
+            <li><strong>Attack (Đớp mồi):</strong> Lao vọt tới trước với cú táp mạnh kèm rung màn hình.</li>
+            <li><strong>Cooldown (Hồi sức):</strong> Nghỉ ngắn sau cú đớp hoặc sau khi ăn mồi nhử.</li>
+          </ul>
+        </div>
+        <div style="background:#fffbeb;border:2px solid #d9c08c;border-radius:12px;padding:10px;">
+          <strong>🎁 Vật Phẩm Hỗ Trợ Dưới Sông & Trên Bờ:</strong>
+          <ul style="margin-left:18px;margin-top:4px;">
+            <li>👟 <strong>Giày Tăng Tốc:</strong> Tăng 45% tốc độ chạy & bơi trong 6 giây.</li>
+            <li>🛡️ <strong>Khiên Bảo Vệ:</strong> Chặn 1 cú đớp trực diện của cá sấu và đẩy lùi nó.</li>
+            <li>⏳ <strong>Đồng Hồ Làm Chậm:</strong> Làm cá sấu bơi chậm 55% trong 6 giây.</li>
+            <li>🍖 <strong>Mồi Nhử Thơm Phức:</strong> Nhặt hoặc bấm nút thả xuống sông để dụ cá sấu lao tới ăn.</li>
+          </ul>
+        </div>
+        <div style="background:#fffbeb;border:2px solid #d9c08c;border-radius:12px;padding:10px;">
+          <strong>🌉 Cầu Gỗ Hai Bên Sông:</strong> Hai cầu gỗ nhỏ ở mép sông giúp bạn bước xuống nước xa hơn một chút, nhưng phần giữa sông vẫn phải bơi qua! Đừng đứng trên bờ quá lâu (hơn 10 giây) kẻo mất điểm thưởng năng động nhé!
+        </div>
+      </div>
+      <button id="btnCloseGuide" class="game-btn primary">ĐÃ HIỂU, QUAY LẠI</button>
+    </div>
+  </div>
+
+  <!-- SETTINGS MODAL -->
+  <div id="settingsModal" class="screen-overlay hidden">
+    <div class="wood-board modal-card">
+      <div class="wood-header-sign">⚙️ CÀI ĐẶT TRÒ CHƠI</div>
+      <div style="margin-bottom:16px;">
+        <div class="setting-row">
+          <span>🔊 Âm thanh hiệu ứng (Web Audio)</span>
+          <div id="toggleSound" class="toggle-switch on" role="switch" aria-checked="true"></div>
+        </div>
+        <div class="setting-row">
+          <span>🎵 Nhạc nền vui nhộn</span>
+          <div id="toggleMusic" class="toggle-switch on" role="switch" aria-checked="true"></div>
+        </div>
+        <div class="setting-row">
+          <span>📳 Rung màn hình khi cá sấu táp</span>
+          <div id="toggleShake" class="toggle-switch on" role="switch" aria-checked="true"></div>
+        </div>
+        <div class="setting-row">
+          <span>🕹️ Hiển thị điều khiển cảm ứng (Joystick)</span>
+          <div id="toggleTouchUI" class="toggle-switch on" role="switch" aria-checked="true"></div>
+        </div>
+        <div class="setting-row">
+          <span>🌶️ Độ khó khởi đầu</span>
+          <select id="selectDifficulty" style="padding:6px 12px;border-radius:8px;border:2px solid #5c3310;font-weight:800;background:#fffbeb;">
+            <option value="easy">Dễ (Thư giãn)</option>
+            <option value="normal" selected>Chuẩn (Khuyên dùng)</option>
+            <option value="hard">Khó (Cá sấu hung dữ)</option>
+          </select>
+        </div>
+      </div>
+      <button id="btnCloseSettings" class="game-btn primary">LƯU & ĐÓNG</button>
+    </div>
+  </div>
+
+  <!-- ACHIEVEMENTS MODAL -->
+  <div id="achievementsModal" class="screen-overlay hidden">
+    <div class="wood-board modal-card">
+      <div class="wood-header-sign">🏅 THÀNH TÍCH NGƯỜI CHƠI</div>
+      <div id="achievementsList" style="margin-bottom:16px;max-height:340px;overflow-y:auto;"></div>
+      <button id="btnCloseAchievements" class="game-btn primary">ĐÓNG</button>
+    </div>
+  </div>
+
+  <!-- PAUSE MODAL -->
+  <div id="pauseModal" class="screen-overlay hidden">
+    <div class="wood-board modal-card" style="max-width:420px;text-align:center;">
+      <div class="wood-header-sign" style="align-self:center;">⏸️ TẠM DỪNG</div>
+      <p style="font-weight:800;margin:8px 0 16px;">Cá sấu đang đợi bạn quay lại dưới sông kìa!</p>
+      <div class="menu-btn-stack">
+        <button id="btnResumeGame" class="game-btn primary">▶️ TIẾP TỤC CHƠI</button>
+        <button id="btnRestartFromPause" class="game-btn gold">🔄 CHƠI LẠI</button>
+        <button id="btnHomeFromPause" class="game-btn red">🏠 TRANG CHỦ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GAME OVER / VICTORY MODAL -->
+  <div id="gameOverModal" class="screen-overlay hidden">
+    <div class="wood-board modal-card" style="text-align:center;">
+      <div id="goHeaderBadge" class="wood-header-sign" style="align-self:center;">🐊 KẾT THÚC LƯỢT!</div>
+      <h2 id="goTitle" style="font-family:'Fredoka',sans-serif;font-size:28px;color:#b91c1c;margin-bottom:4px;">BẠN ĐÃ BỊ CÁ SẤU BẮT!</h2>
+      <p id="goSubtitle" style="font-weight:700;font-size:14px;color:#5c3310;">Chỉ chậm một bước chân nữa thôi là lên tới bờ rồi!</p>
+
+      <div class="stats-grid">
+        <div class="stat-tile">
+          <div id="goScore" class="val">0</div>
+          <div class="lbl">ĐIỂM SỐ ĐẠT ĐƯỢC</div>
+        </div>
+        <div class="stat-tile">
+          <div id="goBestScore" class="val">0</div>
+          <div class="lbl">KỶ LỤC CAO NHẤT</div>
+        </div>
+        <div class="stat-tile">
+          <div id="goRound" class="val">1</div>
+          <div class="lbl">VÒNG CHƠI</div>
+        </div>
+        <div class="stat-tile">
+          <div id="goCrossings" class="val">0</div>
+          <div class="lbl">LẦN VƯỢT SÔNG</div>
+        </div>
+      </div>
+
+      <div class="menu-btn-stack">
+        <button id="btnPlayAgain" class="game-btn primary">🔄 CHƠI LẠI NGAY</button>
+        <button id="btnGoHome" class="game-btn gold" style="grid-column: 1 / -1;">🏠 VỀ TRANG CHỦ</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  // ==========================================
+  // 1. SAFE LOCAL STORAGE & GAME PERSISTENCE
+  // ==========================================
+  const STORAGE_KEY = 'ca_sau_len_bo_save_v1';
+  const defaultSave = {
+    highScore: 0,
+    totalCrossings: 0,
+    maxRound: 1,
+    shieldsBroken: 0,
+    baitsUsed: 0,
+    selectedChar: 0,
+    settings: {
+      sound: true,
+      music: true,
+      shake: true,
+      touchUI: true,
+      difficulty: 'normal'
+    },
+    achievements: {
+      first_cross: false,
+      combo_5: false,
+      survivor_r3: false,
+      shield_saver: false,
+      bait_master: false,
+      score_1500: false
+    }
+  };
+
+  let saveData = JSON.parse(JSON.stringify(defaultSave));
+  function loadSave() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        saveData = {
+          ...defaultSave,
+          ...parsed,
+          settings: { ...defaultSave.settings, ...(parsed.settings || {}) },
+          achievements: { ...defaultSave.achievements, ...(parsed.achievements || {}) }
+        };
+      }
+    } catch (e) {
+      // Fallback in sandboxed iframe
+    }
+  }
+  function writeSave() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(saveData));
+    } catch (e) {
+      // Ignore storage block
+    }
+  }
+  loadSave();
+
+  const ACHIEVEMENTS_META = [
+    { id: 'first_cross', icon: '🌊', title: 'Bước Chân Đầu Tiên', desc: 'Vượt sông an toàn lần đầu tiên.' },
+    { id: 'combo_5', icon: '🔥', title: 'Vua Lội Nước', desc: 'Vượt sông 5 lần liên tiếp trong một lượt chơi.' },
+    { id: 'survivor_r3', icon: '👑', title: 'Chiến Thần Sống Sót', desc: 'Vượt qua Vòng 3 thành công.' },
+    { id: 'shield_saver', icon: '🛡️', title: 'Thoát Khỏi Hàm Cá Sấu', desc: 'Dùng Khiên Bảo Vệ chặn cú táp của cá sấu.' },
+    { id: 'bait_master', icon: '🍖', title: 'Bậc Thầy Đánh Lạc Hướng', desc: 'Dụ cá sấu ăn mồi nhử 3 lần.' },
+    { id: 'score_1500', icon: '💎', title: 'Huyền Thoại Bờ Sông', desc: 'Đạt từ 1.500 điểm trở lên trong một trận.' }
+  ];
+
+  // ==========================================
+  // 2. SYNTHESIZED WEB AUDIO ENGINE
+  // ==========================================
+  class SoundEngine {
+    constructor() {
+      this.ctx = null;
+      this.bgmTimer = null;
+      this.bgmStep = 0;
+    }
+
+    init() {
+      if (!this.ctx) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) {
+          this.ctx = new AudioCtx();
+        }
+      }
+      if (this.ctx && this.ctx.state === 'suspended') {
+        this.ctx.resume();
+      }
+    }
+
+    canPlay() {
+      return saveData.settings.sound && this.ctx;
+    }
+
+    playStep(inWater = false) {
+      if (!this.canPlay()) return;
+      const now = this.ctx.currentTime;
+      if (inWater) {
+        // Water splash noise burst
+        const bufferSize = this.ctx.sampleRate * 0.09;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.4));
+        }
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(650 + Math.random() * 250, now);
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.16, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.09);
+        noise.connect(filter).connect(gain).connect(this.ctx.destination);
+        noise.start(now);
+      } else {
+        // Soft land thud
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(140 + Math.random() * 30, now);
+        osc.frequency.exponentialRampToValueAtTime(55, now + 0.05);
+        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+        osc.connect(gain).connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.055);
+      }
+    }
+
+    playSplashEntry() {
+      if (!this.canPlay()) return;
+      const now = this.ctx.currentTime;
+      const bufferSize = this.ctx.sampleRate * 0.22;
+      const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.35));
+      }
+      const noise = this.ctx.createBufferSource();
+      noise.buffer = buffer;
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(1100, now);
+      filter.frequency.exponentialRampToValueAtTime(300, now + 0.22);
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(0.28, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
+      noise.connect(filter).connect(gain).connect(this.ctx.destination);
+      noise.start(now);
+    }
+
+    playCrocAlert() {
+      if (!this.canPlay()) return;
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(320, now);
+      osc.frequency.setValueAtTime(480, now + 0.07);
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
+      osc.connect(gain).connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.19);
+    }
+
+    playCrocSnap() {
+      if (!this.canPlay()) return;
+      const now = this.ctx.currentTime;
+      // Low growl + sharp jaw snap
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(150, now);
+      osc.frequency.exponentialRampToValueAtTime(42, now + 0.24);
+      gain.gain.setValueAtTime(0.32, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+      osc.connect(gain).connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.26);
+    }
+
+    playPowerup() {
+      if (!this.canPlay()) return;
+      const now = this.ctx.currentTime;
+      const notes = [523.25, 659.25, 783.99, 1046.5];
+      notes.forEach((freq, idx) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now + idx * 0.055);
+        gain.gain.setValueAtTime(0.18, now + idx * 0.055);
+        gain.gain.exponentialRampToValueAtTime(0.008, now + idx * 0.055 + 0.14);
+        osc.connect(gain).connect(this.ctx.destination);
+        osc.start(now + idx * 0.055);
+        osc.stop(now + idx * 0.055 + 0.15);
+      });
+    }
+
+    playScoreBank() {
+      if (!this.canPlay()) return;
+      const now = this.ctx.currentTime;
+      [440, 554.37, 659.25, 880].forEach((freq, idx) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, now + idx * 0.06);
+        gain.gain.setValueAtTime(0.22, now + idx * 0.06);
+        gain.gain.exponentialRampToValueAtTime(0.008, now + idx * 0.06 + 0.18);
+        osc.connect(gain).connect(this.ctx.destination);
+        osc.start(now + idx * 0.06);
+        osc.stop(now + idx * 0.06 + 0.19);
+      });
+    }
+
+    playGameOver() {
+      if (!this.canPlay()) return;
+      const now = this.ctx.currentTime;
+      [392, 349.23, 329.63, 261.63].forEach((freq, idx) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(freq, now + idx * 0.14);
+        gain.gain.setValueAtTime(0.18, now + idx * 0.14);
+        gain.gain.exponentialRampToValueAtTime(0.008, now + idx * 0.14 + 0.25);
+        osc.connect(gain).connect(this.ctx.destination);
+        osc.start(now + idx * 0.14);
+        osc.stop(now + idx * 0.14 + 0.26);
+      });
+    }
+
+    startMusic() {
+      this.stopMusic();
+      if (!saveData.settings.music || !saveData.settings.sound) return;
+      const melody = [261.63, 329.63, 392.00, 329.63, 293.66, 349.23, 440.00, 349.23];
+      this.bgmTimer = setInterval(() => {
+        if (!saveData.settings.music || !saveData.settings.sound || !this.ctx || gameState.mode !== 'playing') return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        const freq = melody[this.bgmStep % melody.length];
+        this.bgmStep++;
+        osc.frequency.setValueAtTime(freq, now);
+        gain.gain.setValueAtTime(0.04, now);
+        gain.gain.exponentialRampToValueAtTime(0.004, now + 0.22);
+        osc.connect(gain).connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.24);
+      }, 280);
+    }
+
+    stopMusic() {
+      if (this.bgmTimer) {
+        clearInterval(this.bgmTimer);
+        this.bgmTimer = null;
+      }
+    }
+  }
+
+  const sfx = new SoundEngine();
+
+  // ==========================================
+  // 3. WORLD GEOMETRY & CONSTANTS
+  // ==========================================
+  const WORLD_W = 1200;
+  const WORLD_H = 720;
+  const TOP_BANK_Y = 250;     // 0 .. 250 is top sandy shore
+  const BOT_BANK_Y = 530;     // 530 .. 720 is bottom sandy shore
+  // River is between 250 and 530 (height 280px)
+
+  // Two wooden docks on left & right (inspired by the concept art!)
+  const DOCKS = [
+    { x: 0, y: 225, w: 68, h: 115, side: 'left-top' },
+    { x: WORLD_W - 68, y: 225, w: 68, h: 115, side: 'right-top' },
+    { x: 0, y: 440, w: 68, h: 115, side: 'left-bot' },
+    { x: WORLD_W - 68, y: 440, w: 68, h: 115, side: 'right-bot' }
+  ];
+
+  // Character profiles matching the 4 cute kids in the concept image
+  const CHARACTERS = [
+    { name: 'Tí Áo Xanh Lá', shirt: '#22c55e', pants: '#1d4ed8', shoes: '#1e293b', hair: '#3b2213', girl: false, swimBonus: 1.0, staminaBonus: 1.0, buffBonus: 1.0 },
+    { name: 'Bin Áo Xanh Dương', shirt: '#38bdf8', pants: '#1e3a8a', shoes: '#dc2626', hair: '#2c1810', girl: false, swimBonus: 1.08, staminaBonus: 1.0, buffBonus: 1.0 },
+    { name: 'Bo Áo Đỏ', shirt: '#ef4444', pants: '#78350f', shoes: '#f59e0b', hair: '#3b2213', girl: false, swimBonus: 1.0, staminaBonus: 1.15, buffBonus: 1.0 },
+    { name: 'Na Áo Hồng', shirt: '#f472b6', pants: '#38bdf8', shoes: '#db2777', hair: '#2d1606', girl: true, swimBonus: 1.02, staminaBonus: 1.0, buffBonus: 1.15 }
+  ];
+
+  function isPointSafeOnLand(x, y) {
+    if (y <= TOP_BANK_Y || y >= BOT_BANK_Y) return true;
+    for (const d of DOCKS) {
+      if (x >= d.x && x <= d.x + d.w && y >= d.y && y <= d.y + d.h) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function whichBank(y) {
+    if (y <= TOP_BANK_Y) return 'top';
+    if (y >= BOT_BANK_Y) return 'bottom';
+    return 'river';
+  }
+
+  // ==========================================
+  // 4. STATIC SCENERY (Trees, Fences, Rocks, Lilypads)
+  // ==========================================
+  const scenery = {
+    trees: [
+      { x: 65, y: 78, r: 52 },
+      { x: 1090, y: 82, r: 48 },
+      { x: 95, y: 655, r: 46 },
+      { x: 1110, y: 650, r: 50 }
+    ],
+    bushes: [
+      { x: 170, y: 105, r: 24 },
+      { x: 850, y: 95, r: 28 },
+      { x: 920, y: 110, r: 22 },
+      { x: 250, y: 645, r: 25 },
+      { x: 890, y: 648, r: 26 }
+    ],
+    fences: [
+      { x: 195, y: 58, w: 150 },
+      { x: 660, y: 55, w: 165 },
+      { x: 340, y: 662, w: 150 },
+      { x: 720, y: 662, w: 150 }
+    ],
+    tufts: [
+      { x: 310, y: 160 }, { x: 560, y: 175 }, { x: 770, y: 145 },
+      { x: 280, y: 590 }, { x: 610, y: 600 }, { x: 830, y: 575 }
+    ],
+    lilypads: [
+      { x: 390, y: 315, r: 19, angle: 0.4 },
+      { x: 425, y: 330, r: 14, angle: 2.1 },
+      { x: 590, y: 495, r: 22, angle: 1.1 },
+      { x: 635, y: 510, r: 16, angle: 3.5 },
+      { x: 120, y: 430, r: 18, angle: 0.8 },
+      { x: 955, y: 325, r: 20, angle: 2.6 }
+    ],
+    riverRocks: [
+      { x: 715, y: 470, rx: 24, ry: 15 },
+      { x: 245, y: 355, rx: 19, ry: 12 }
+    ]
+  };
+
+  // ==========================================
+  // 5. GAME STATE & ENTITIES
+  // ==========================================
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+
+  const gameState = {
+    mode: 'home', // 'home' | 'playing' | 'paused' | 'gameover'
+    round: 1,
+    timeLeft: 45,
+    score: 0,
+    crossingsThisGame: 0,
+    combo: 0,
+    globalTime: 0,
+    shakeTime: 0,
+    shakeIntensity: 0,
+    slowMoTimer: 0,
+    mission: {
+      type: 'cross',
+      target: 3,
+      current: 0,
+      reward: 250,
+      text: 'Vượt sông 3 lần'
+    },
+    particles: [],
+    ripples: [],
+    floatingTexts: [],
+    powerups: [],
+    baits: [],
+    crocs: [],
+    npcs: []
+  };
+
+  const player = {
+    x: WORLD_W / 2,
+    y: 160,
+    vx: 0,
+    vy: 0,
+    radius: 18,
+    facingX: 0,
+    facingY: 1,
+    animPhase: 0,
+    stamina: 100,
+    maxStamina: 100,
+    isSprinting: false,
+    inWater: false,
+    safeOnLand: true,
+    lastBank: 'top',
+    bankCampTimer: 0,
+    speedTimer: 0,
+    shieldCount: 0,
+    invulnTimer: 0,
+    baitInventory: 1,
+    stepSoundCooldown: 0
+  };
+
+  // ==========================================
+  // 6. INPUT HANDLING (KEYBOARD + TOUCH JOYSTICK)
+  // ==========================================
+  const keys = {};
+  const joystick = {
+    active: false,
+    pointerId: null,
+    dx: 0,
+    dy: 0,
+    sprintHeld: false
+  };
+
+  window.addEventListener('keydown', (e) => {
+    keys[e.code] = true;
+    if (e.code === 'Escape') {
+      if (gameState.mode === 'playing') pauseGame();
+      else if (gameState.mode === 'paused') resumeGame();
+    }
+    if ((e.code === 'Space' || e.code === 'KeyE') && gameState.mode === 'playing') {
+      e.preventDefault();
+      throwBaitAction();
+    }
+  });
+
+  window.addEventListener('keyup', (e) => {
+    keys[e.code] = false;
+  });
+
+  // Virtual Joystick Setup
+  const joystickZone = document.getElementById('joystickZone');
+  const joystickKnob = document.getElementById('joystickKnob');
+  const btnTouchSprint = document.getElementById('btnTouchSprint');
+  const btnTouchBait = document.getElementById('btnTouchBait');
+
+  function updateJoystickFromEvent(clientX, clientY) {
+    const rect = joystickZone.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const maxDist = rect.width * 0.36;
+    let dx = clientX - cx;
+    let dy = clientY - cy;
+    const dist = Math.hypot(dx, dy);
+    if (dist > maxDist) {
+      dx = (dx / dist) * maxDist;
+      dy = (dy / dist) * maxDist;
+    }
+    joystickKnob.style.transform = `translate(${dx.toFixed(1)}px, ${dy.toFixed(1)}px)`;
+    joystick.dx = dx / maxDist;
+    joystick.dy = dy / maxDist;
+  }
+
+  function resetJoystick() {
+    joystick.active = false;
+    joystick.pointerId = null;
+    joystick.dx = 0;
+    joystick.dy = 0;
+    joystickKnob.style.transform = 'translate(0px, 0px)';
+  }
+
+  joystickZone.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    sfx.init();
+    joystick.active = true;
+    joystick.pointerId = e.pointerId;
+    joystickZone.setPointerCapture(e.pointerId);
+    updateJoystickFromEvent(e.clientX, e.clientY);
+  });
+
+  joystickZone.addEventListener('pointermove', (e) => {
+    if (!joystick.active || e.pointerId !== joystick.pointerId) return;
+    updateJoystickFromEvent(e.clientX, e.clientY);
+  });
+
+  joystickZone.addEventListener('pointerup', resetJoystick);
+  joystickZone.addEventListener('pointercancel', resetJoystick);
+
+  btnTouchSprint.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    sfx.init();
+    joystick.sprintHeld = true;
+    btnTouchSprint.classList.add('active');
+  });
+  const releaseSprint = () => {
+    joystick.sprintHeld = false;
+    btnTouchSprint.classList.remove('active');
+  };
+  btnTouchSprint.addEventListener('pointerup', releaseSprint);
+  btnTouchSprint.addEventListener('pointercancel', releaseSprint);
+  btnTouchSprint.addEventListener('pointerleave', releaseSprint);
+
+  btnTouchBait.addEventListener('click', (e) => {
+    e.preventDefault();
+    sfx.init();
+    if (gameState.mode === 'playing') throwBaitAction();
+  });
+
+  // ==========================================
+  // 7. CROCODILE AI & NPC KID ENTITIES
+  // ==========================================
+  function createCrocodile(idx, round) {
+    const diffMult = saveData.settings.difficulty === 'easy' ? 0.85 : (saveData.settings.difficulty === 'hard' ? 1.18 : 1.0);
+    const speedScale = (1 + (round - 1) * 0.11) * diffMult;
+    const minY = TOP_BANK_Y + 42;
+    const maxY = BOT_BANK_Y - 42;
+    const yPos = minY + ((idx + 0.5) / Math.max(1, getCrocCountForRound(round))) * (maxY - minY);
+    const xPos = 220 + (idx * 370) % 760;
+
+    return {
+      id: idx,
+      x: xPos,
+      y: yPos,
+      vx: 0,
+      vy: 0,
+      angle: idx % 2 === 0 ? 0 : Math.PI,
+      state: 'IDLE', // 'IDLE' | 'DETECT' | 'CHASE' | 'ATTACK' | 'COOLDOWN'
+      stateTimer: 0,
+      patrolTargetX: 160 + Math.random() * (WORLD_W - 320),
+      patrolTargetY: minY + Math.random() * (maxY - minY),
+      patrolSpeed: 98 * speedScale,
+      chaseSpeed: 188 * speedScale,
+      attackSpeed: 390 * speedScale,
+      detectRadius: 270 + round * 14,
+      attackRange: 108,
+      attackDirX: 1,
+      attackDirY: 0,
+      jawOpen: 0.15,
+      tailPhase: Math.random() * Math.PI * 2,
+      targetEntity: null,
+      rippleTimer: 0
+    };
+  }
+
+  function getCrocCountForRound(round) {
+    if (round <= 1) return 1;
+    if (round <= 3) return 2;
+    if (round <= 5) return 3;
+    return 4;
+  }
+
+  function createNPCKids() {
+    const list = [];
+    let charIdx = 0;
+    for (let i = 0; i < 3; i++) {
+      if (charIdx === saveData.selectedChar) charIdx++;
+      const profile = CHARACTERS[charIdx % CHARACTERS.length];
+      charIdx++;
+      const startTop = i % 2 === 0;
+      list.push({
+        x: 240 + i * 320,
+        y: startTop ? 150 : 610,
+        vx: 0,
+        vy: 0,
+        profile,
+        targetBank: startTop ? 'top' : 'bottom',
+        waitTimer: 1.5 + i * 1.4,
+        targetX: 240 + i * 320,
+        inWater: false,
+        safeOnLand: true,
+        animPhase: Math.random() * 6,
+        facingX: 0,
+        facingY: 1,
+        stunnedTimer: 0,
+        scared: false
+      });
+    }
+    return list;
+  }
+
+  // ==========================================
+  // 8. MISSIONS, POWERUPS & ACHIEVEMENTS
+  // ==========================================
+  function generateMissionForRound(round) {
+    const pool = [
+      { type: 'cross', target: 2 + Math.min(4, round), reward: 200 + round * 50, text: `Vượt sông an toàn ${2 + Math.min(4, round)} lần` },
+      { type: 'item', target: 2, reward: 250, text: 'Nhặt 2 vật phẩm hỗ trợ dưới sông' },
+      { type: 'escape', target: 1 + Math.floor(round / 2), reward: 300, text: `Thoát khỏi cá sấu đang đuổi ${1 + Math.floor(round / 2)} lần` }
+    ];
+    const m = pool[(round - 1) % pool.length];
+    gameState.mission = { ...m, current: 0, completed: false };
+    updateMissionHUD();
+  }
+
+  function progressMission(type, amount = 1) {
+    const m = gameState.mission;
+    if (m.completed || m.type !== type) return;
+    m.current = Math.min(m.target, m.current + amount);
+    if (m.current >= m.target) {
+      m.completed = true;
+      gameState.score += m.reward;
+      sfx.playScoreBank();
+      showToast(`🎯 Hoàn thành nhiệm vụ! +${m.reward} Điểm`);
+      spawnFloatingText(player.x, player.y - 35, `🎯 NHIỆM VỤ +${m.reward}`, '#fde047');
+    }
+    updateMissionHUD();
+  }
+
+  function unlockAchievement(id) {
+    if (saveData.achievements[id]) return;
+    saveData.achievements[id] = true;
+    writeSave();
+    const meta = ACHIEVEMENTS_META.find(a => a.id === id);
+    if (meta) {
+      sfx.playScoreBank();
+      showToast(`🏅 Mở khóa thành tích: ${meta.title}!`);
+    }
+  }
+
+  function spawnPowerup() {
+    if (gameState.powerups.length >= 3) return;
+    const types = [
+      { type: 'speed', icon: '👟', label: 'Giày Tăng Tốc', color: '#38bdf8' },
+      { type: 'shield', icon: '🛡️', label: 'Khiên Bảo Vệ', color: '#facc15' },
+      { type: 'slow', icon: '⏳', label: 'Đồng Hồ Chậm', color: '#a855f7' },
+      { type: 'bait', icon: '🍖', label: 'Mồi Nhử', color: '#f97316' }
+    ];
+    const picked = types[Math.floor(Math.random() * types.length)];
+    // Spawn mostly in river or near shoreline for risk/reward
+    const inRiver = Math.random() < 0.78;
+    const x = 140 + Math.random() * (WORLD_W - 280);
+    const y = inRiver
+      ? (TOP_BANK_Y + 38 + Math.random() * (BOT_BANK_Y - TOP_BANK_Y - 76))
+      : (Math.random() < 0.5 ? 140 + Math.random() * 80 : 565 + Math.random() * 85);
+
+    gameState.powerups.push({
+      ...picked,
+      x,
+      y,
+      r: 20,
+      bobPhase: Math.random() * Math.PI * 2,
+      ttl: 16
+    });
+  }
+
+  function throwBaitAction() {
+    if (player.baitInventory <= 0) {
+      spawnFloatingText(player.x, player.y - 25, 'Hết mồi nhử! 🍖', '#fca5a5');
+      return;
+    }
+    player.baitInventory--;
+    saveData.baitsUsed++;
+    if (saveData.baitsUsed >= 3) unlockAchievement('bait_master');
+    writeSave();
+
+    // Throw bait toward the middle of the river ahead of player
+    const targetY = Math.max(TOP_BANK_Y + 45, Math.min(BOT_BANK_Y - 45, player.y + (player.y < WORLD_H / 2 ? 95 : -95)));
+    const targetX = Math.max(100, Math.min(WORLD_W - 100, player.x + player.facingX * 70));
+
+    gameState.baits.push({
+      x: targetX,
+      y: targetY,
+      ttl: 8.5,
+      r: 18
+    });
+    sfx.playSplashEntry();
+    spawnRipple(targetX, targetY, 42);
+    spawnFloatingText(targetX, targetY - 20, '🍖 MỒI NHỬ!', '#fb923c');
+    updateHUD();
+  }
+
+  // ==========================================
+  // 9. PARTICLES, RIPPLES & VISUAL EFFECTS
+  // ==========================================
+  function spawnRipple(x, y, maxR = 32) {
+    gameState.ripples.push({ x, y, r: 6, maxR, alpha: 0.75 });
+  }
+
+  function spawnWaterSplash(x, y, count = 10) {
+    for (let i = 0; i < count; i++) {
+      const ang = Math.random() * Math.PI * 2;
+      const spd = 40 + Math.random() * 110;
+      gameState.particles.push({
+        x, y,
+        vx: Math.cos(ang) * spd,
+        vy: Math.sin(ang) * spd - 20,
+        r: 3 + Math.random() * 4,
+        color: Math.random() < 0.5 ? '#ffffff' : '#bae6fd',
+        alpha: 1,
+        life: 0.35 + Math.random() * 0.25,
+        maxLife: 0.5
+      });
+    }
+  }
+
+  function spawnDustPuff(x, y) {
+    for (let i = 0; i < 3; i++) {
+      gameState.particles.push({
+        x: x + (Math.random() - 0.5) * 14,
+        y: y + 14,
+        vx: (Math.random() - 0.5) * 35,
+        vy: -10 - Math.random() * 20,
+        r: 4 + Math.random() * 4,
+        color: '#fde68a',
+        alpha: 0.75,
+        life: 0.3,
+        maxLife: 0.3
+      });
+    }
+  }
+
+  function spawnFloatingText(x, y, text, color = '#ffffff') {
+    gameState.floatingTexts.push({
+      x, y, text, color, life: 1.2, maxLife: 1.2
+    });
+  }
+
+  function triggerScreenShake(intensity = 10, duration = 0.32) {
+    if (!saveData.settings.shake) return;
+    gameState.shakeIntensity = Math.max(gameState.shakeIntensity, intensity);
+    gameState.shakeTime = Math.max(gameState.shakeTime, duration);
+  }
+
+  function showToast(message) {
+    const container = document.getElementById('toastContainer');
+    const div = document.createElement('div');
+    div.className = 'game-toast';
+    div.textContent = message;
+    container.appendChild(div);
+    setTimeout(() => {
+      if (div.parentNode) div.parentNode.removeChild(div);
+    }, 2400);
+  }
+
+  // ==========================================
+  // 10. GAME FLOW CONTROL (START, ROUND, PAUSE, END)
+  // ==========================================
+  function startNewGame() {
+    sfx.init();
+    const charProfile = CHARACTERS[saveData.selectedChar] || CHARACTERS[0];
+
+    gameState.mode = 'playing';
+    gameState.round = 1;
+    gameState.timeLeft = 45;
+    gameState.score = 0;
+    gameState.crossingsThisGame = 0;
+    gameState.combo = 0;
+    gameState.slowMoTimer = 0;
+    gameState.particles = [];
+    gameState.ripples = [];
+    gameState.floatingTexts = [];
+    gameState.powerups = [];
+    gameState.baits = [];
+
+    player.x = WORLD_W / 2;
+    player.y = 155;
+    player.vx = 0;
+    player.vy = 0;
+    player.maxStamina = 100 * charProfile.staminaBonus;
+    player.stamina = player.maxStamina;
+    player.inWater = false;
+    player.safeOnLand = true;
+    player.lastBank = 'top';
+    player.bankCampTimer = 0;
+    player.speedTimer = 0;
+    player.shieldCount = 0;
+    player.invulnTimer = 0;
+    player.baitInventory = 1;
+
+    setupRoundEntities(1);
+    generateMissionForRound(1);
+    spawnPowerup();
+
+    document.getElementById('homeScreen').classList.add('hidden');
+    document.getElementById('gameOverModal').classList.add('hidden');
+    document.getElementById('pauseModal').classList.add('hidden');
+    document.getElementById('hudOverlay').classList.remove('hidden');
+
+    applyTouchUIVisibility();
+    updateHUD();
+    sfx.startMusic();
+    showToast('🚩 Vòng 1 Bắt Đầu! Vượt sông cẩn thận nhé!');
+  }
+
+  function setupRoundEntities(round) {
+    const numCrocs = getCrocCountForRound(round);
+    gameState.crocs = [];
+    for (let i = 0; i < numCrocs; i++) {
+      gameState.crocs.push(createCrocodile(i, round));
+    }
+    if (round === 1) {
+      gameState.npcs = createNPCKids();
+    }
+  }
+
+  function advanceNextRound() {
+    gameState.round++;
+    gameState.timeLeft = 45;
+    const roundBonus = 200 + gameState.round * 50;
+    gameState.score += roundBonus;
+    player.baitInventory = Math.min(3, player.baitInventory + 1);
+
+    if (gameState.round > saveData.maxRound) {
+      saveData.maxRound = gameState.round;
+    }
+    if (gameState.round > 3) {
+      unlockAchievement('survivor_r3');
+    }
+    writeSave();
+
+    setupRoundEntities(gameState.round);
+    generateMissionForRound(gameState.round);
+    spawnPowerup();
+    sfx.playScoreBank();
+    showToast(`🎉 Qua Vòng ${gameState.round}! Thưởng sống sót +${roundBonus} điểm!`);
+    spawnFloatingText(player.x, player.y - 35, `VÒNG ${gameState.round}! +${roundBonus}`, '#4ade80');
+  }
+
+  function pauseGame() {
+    if (gameState.mode !== 'playing') return;
+    gameState.mode = 'paused';
+    resetJoystick();
+    releaseSprint();
+    document.getElementById('pauseModal').classList.remove('hidden');
+  }
+
+  function resumeGame() {
+    if (gameState.mode !== 'paused') return;
+    gameState.mode = 'playing';
+    document.getElementById('pauseModal').classList.add('hidden');
+  }
+
+  function endGame(reasonTitle, reasonSub) {
+    gameState.mode = 'gameover';
+    sfx.stopMusic();
+    sfx.playGameOver();
+    resetJoystick();
+    releaseSprint();
+
+    if (gameState.score > saveData.highScore) {
+      saveData.highScore = gameState.score;
+    }
+    if (gameState.score >= 1500) {
+      unlockAchievement('score_1500');
+    }
+    writeSave();
+
+    document.getElementById('goTitle').textContent = reasonTitle;
+    document.getElementById('goSubtitle').textContent = reasonSub;
+    document.getElementById('goScore').textContent = gameState.score;
+    document.getElementById('goBestScore').textContent = saveData.highScore;
+    document.getElementById('goRound').textContent = gameState.round;
+    document.getElementById('goCrossings').textContent = gameState.crossingsThisGame;
+
+    document.getElementById('gameOverModal').classList.remove('hidden');
+    updateHomeStatsUI();
+  }
+
+  function returnToHome() {
+    gameState.mode = 'home';
+    sfx.stopMusic();
+    document.getElementById('hudOverlay').classList.add('hidden');
+    document.getElementById('pauseModal').classList.add('hidden');
+    document.getElementById('gameOverModal').classList.add('hidden');
+    document.getElementById('homeScreen').classList.remove('hidden');
+    updateHomeStatsUI();
+  }
+
+  // ==========================================
+  // 11. UPDATE LOOP (PHYSICS, AI, COLLISIONS)
+  // ==========================================
+  let powerupSpawnTimer = 4;
+
+  function updateGame(dt) {
+    gameState.globalTime += dt;
+
+    if (gameState.shakeTime > 0) {
+      gameState.shakeTime = Math.max(0, gameState.shakeTime - dt);
+    }
+
+    // Keep subtle ripples in background even on home screen
+    if (Math.random() < dt * 2.5) {
+      spawnRipple(100 + Math.random() * (WORLD_W - 200), TOP_BANK_Y + 30 + Math.random() * (BOT_BANK_Y - TOP_BANK_Y - 60), 22);
+    }
+
+    updateParticlesAndRipples(dt);
+
+    if (gameState.mode !== 'playing') return;
+
+    // Round Timer
+    gameState.timeLeft -= dt;
+    if (gameState.timeLeft <= 0) {
+      advanceNextRound();
+    }
+
+    if (gameState.slowMoTimer > 0) {
+      gameState.slowMoTimer = Math.max(0, gameState.slowMoTimer - dt);
+    }
+
+    // Powerup spawning
+    powerupSpawnTimer -= dt;
+    if (powerupSpawnTimer <= 0) {
+      spawnPowerup();
+      powerupSpawnTimer = 6.5;
+    }
+
+    updatePlayer(dt);
+    updateNPCs(dt);
+    updatePowerupsAndBaits(dt);
+    updateCrocodiles(dt);
+    updateHUD();
+  }
+
+  function updatePlayer(dt) {
+    const profile = CHARACTERS[saveData.selectedChar] || CHARACTERS[0];
+
+    // Gather movement vector
+    let mx = 0;
+    let my = 0;
+    if (keys['KeyW'] || keys['ArrowUp']) my -= 1;
+    if (keys['KeyS'] || keys['ArrowDown']) my += 1;
+    if (keys['KeyA'] || keys['ArrowLeft']) mx -= 1;
+    if (keys['KeyD'] || keys['ArrowRight']) mx += 1;
+
+    if (joystick.active && (Math.abs(joystick.dx) > 0.08 || Math.abs(joystick.dy) > 0.08)) {
+      mx = joystick.dx;
+      my = joystick.dy;
+    } else if (mx !== 0 || my !== 0) {
+      const len = Math.hypot(mx, my);
+      mx /= len;
+      my /= len;
+    }
+
+    const wantsSprint = keys['ShiftLeft'] || keys['ShiftRight'] || joystick.sprintHeld;
+    const isMoving = Math.hypot(mx, my) > 0.05;
+
+    if (wantsSprint && isMoving && player.stamina > 2) {
+      player.isSprinting = true;
+      player.stamina = Math.max(0, player.stamina - 34 * dt);
+    } else {
+      player.isSprinting = false;
+      player.stamina = Math.min(player.maxStamina, player.stamina + 22 * dt);
+    }
+
+    if (player.speedTimer > 0) player.speedTimer = Math.max(0, player.speedTimer - dt);
+    if (player.invulnTimer > 0) player.invulnTimer = Math.max(0, player.invulnTimer - dt);
+
+    const wasSafe = player.safeOnLand;
+    player.safeOnLand = isPointSafeOnLand(player.x, player.y);
+    player.inWater = !player.safeOnLand;
+
+    if (wasSafe && player.inWater) {
+      sfx.playSplashEntry();
+      spawnWaterSplash(player.x, player.y, 12);
+      spawnRipple(player.x, player.y, 38);
+    }
+
+    // Calculate speed
+    let baseSpeed = player.inWater ? 158 * profile.swimBonus : 215;
+    if (player.isSprinting) baseSpeed *= 1.44;
+    if (player.speedTimer > 0) baseSpeed *= 1.42;
+
+    player.vx = mx * baseSpeed;
+    player.vy = my * baseSpeed;
+
+    player.x += player.vx * dt;
+    player.y += player.vy * dt;
+
+    // Clamp to world boundaries
+    player.x = Math.max(30, Math.min(WORLD_W - 30, player.x));
+    player.y = Math.max(46, Math.min(WORLD_H - 36, player.y));
+
+    // Re-evaluate zone after clamping
+    player.safeOnLand = isPointSafeOnLand(player.x, player.y);
+    player.inWater = !player.safeOnLand;
+
+    if (isMoving) {
+      player.facingX = mx;
+      player.facingY = my;
+      player.animPhase += dt * (player.isSprinting ? 14 : 9);
+
+      player.stepSoundCooldown -= dt;
+      if (player.stepSoundCooldown <= 0) {
+        sfx.playStep(player.inWater);
+        player.stepSoundCooldown = player.isSprinting ? 0.19 : 0.28;
+        if (player.inWater) {
+          spawnRipple(player.x, player.y + 8, 28);
+          if (player.isSprinting) spawnWaterSplash(player.x, player.y + 6, 4);
+        } else if (player.isSprinting) {
+          spawnDustPuff(player.x, player.y);
+        }
+      }
+    } else {
+      player.animPhase += dt * 2;
+    }
+
+    // Check bank crossing!
+    const currentBank = whichBank(player.y);
+    if ((currentBank === 'top' || currentBank === 'bottom') && currentBank !== player.lastBank) {
+      player.lastBank = currentBank;
+      player.bankCampTimer = 0;
+      gameState.crossingsThisGame++;
+      gameState.combo++;
+      saveData.totalCrossings++;
+
+      const pts = 100 + Math.min(5, gameState.combo - 1) * 35;
+      gameState.score += pts;
+      sfx.playScoreBank();
+      spawnFloatingText(player.x, player.y - 30, `+${pts} VƯỢT SÔNG! (Combo x${gameState.combo})`, '#4ade80');
+
+      unlockAchievement('first_cross');
+      if (gameState.combo >= 5) unlockAchievement('combo_5');
+      if ( gameState.score >= 1500) unlockAchievement('score_1500');
+      writeSave();
+
+      progressMission('cross', 1);
+    }
+
+    // Bank camping nudge
+    if (player.safeOnLand) {
+      player.bankCampTimer += dt;
+      if (player.bankCampTimer > 10) {
+        player.bankCampTimer = 7;
+        gameState.combo = 0;
+        spawnFloatingText(player.x, player.y - 25, 'Hãy xuống sông vượt bờ để ghi điểm!', '#fde047');
+      }
+    } else {
+      player.bankCampTimer = 0;
+    }
+  }
+
+  function updateNPCs(dt) {
+    for (const npc of gameState.npcs) {
+      if (npc.stunnedTimer > 0) {
+        npc.stunnedTimer -= dt;
+        continue;
+      }
+
+      npc.safeOnLand = isPointSafeOnLand(npc.x, npc.y);
+      npc.inWater = !npc.safeOnLand;
+
+      if (npc.safeOnLand) {
+        npc.waitTimer -= dt;
+        if (npc.waitTimer <= 0) {
+          // Decide to cross to the opposite shore
+          npc.targetBank = npc.y < WORLD_H / 2 ? 'bottom' : 'top';
+          npc.targetX = 160 + Math.random() * (WORLD_W - 320);
+          npc.waitTimer = 3.5 + Math.random() * 4;
+        }
+      }
+
+      const goalY = npc.targetBank === 'top' ? 145 : 615;
+      let dx = npc.targetX - npc.x;
+      let dy = goalY - npc.y;
+
+      // Evade nearby crocodile if in water
+      npc.scared = false;
+      if (npc.inWater) {
+        for (const c of gameState.crocs) {
+          const dist = Math.hypot(npc.x - c.x, npc.y - c.y);
+          if (dist < 170) {
+            npc.scared = true;
+            dx += (npc.x - c.x) * 1.4;
+            dy += (npc.y < WORLD_H / 2 ? -120 : 120);
+          }
+        }
+      }
+
+      const dist = Math.hypot(dx, dy);
+      if (dist > 10) {
+        const spd = npc.inWater ? (npc.scared ? 168 : 138) : 165;
+        npc.vx = (dx / dist) * spd;
+        npc.vy = (dy / dist) * spd;
+        npc.x += npc.vx * dt;
+        npc.y += npc.vy * dt;
+        npc.facingX = dx / dist;
+        npc.facingY = dy / dist;
+        npc.animPhase += dt * 9;
+        if (npc.inWater && Math.random() < dt * 4) {
+          spawnRipple(npc.x, npc.y + 8, 22);
+        }
+      } else {
+        npc.vx = 0;
+        npc.vy = 0;
+      }
+
+      npc.x = Math.max(85, Math.min(WORLD_W - 85, npc.x));
+      npc.y = Math.max(70, Math.min(WORLD_H - 55, npc.y));
+    }
+  }
+
+  function updatePowerupsAndBaits(dt) {
+    const profile = CHARACTERS[saveData.selectedChar] || CHARACTERS[0];
+
+    for (let i = gameState.powerups.length - 1; i >= 0; i--) {
+      const p = gameState.powerups[i];
+      p.bobPhase += dt * 4;
+      p.ttl -= dt;
+      if (p.ttl <= 0) {
+        gameState.powerups.splice(i, 1);
+        continue;
+      }
+
+      // Check pickup by player
+      if (Math.hypot(player.x - p.x, player.y - p.y) < player.radius + p.r) {
+        sfx.playPowerup();
+        const durMult = profile.buffBonus;
+        if (p.type === 'speed') {
+          player.speedTimer = 6.5 * durMult;
+          spawnFloatingText(p.x, p.y - 20, '👟 TĂNG TỐC!', '#38bdf8');
+        } else if (p.type === 'shield') {
+          player.shieldCount = Math.min(2, player.shieldCount + 1);
+          spawnFloatingText(p.x, p.y - 20, '🛡️ KHIÊN BẢO VỆ!', '#facc15');
+        } else if (p.type === 'slow') {
+          gameState.slowMoTimer = 6.5 * durMult;
+          spawnFloatingText(p.x, p.y - 20, '⏳ LÀM CHẬM CÁ SẤU!', '#c084fc');
+        } else if (p.type === 'bait') {
+          player.baitInventory = Math.min(3, player.baitInventory + 1);
+          spawnFloatingText(p.x, p.y - 20, '🍖 +1 MỒI NHỬ!', '#fb923c');
+        }
+        progressMission('item', 1);
+        gameState.score += 40;
+        gameState.powerups.splice(i, 1);
+      }
+    }
+
+    for (let i = gameState.baits.length - 1; i >= 0; i--) {
+      const b = gameState.baits[i];
+      b.ttl -= dt;
+      if (Math.random() < dt * 3) spawnRipple(b.x, b.y, 26);
+      if (b.ttl <= 0) {
+        gameState.baits.splice(i, 1);
+      }
+    }
+  }
+
+  function findBestTargetForCroc(croc) {
+    // Priority 1: Active Bait in water
+    let bestBait = null;
+    let bestBaitDist = Infinity;
+    for (const b of gameState.baits) {
+      const d = Math.hypot(b.x - croc.x, b.y - croc.y);
+      if (d < croc.detectRadius * 1.35 && d < bestBaitDist) {
+        bestBaitDist = d;
+        bestBait = { type: 'bait', ref: b, x: b.x, y: b.y, vx: 0, vy: 0 };
+      }
+    }
+    if (bestBait) return bestBait;
+
+    // Priority 2: Player or NPC in water within detection range
+    let bestSwimmer = null;
+    let bestDist = croc.detectRadius;
+
+    if (player.inWater && player.invulnTimer <= 0) {
+      const d = Math.hypot(player.x - croc.x, player.y - croc.y);
+      if (d < bestDist) {
+        bestDist = d;
+        bestSwimmer = { type: 'player', ref: player, x: player.x, y: player.y, vx: player.vx, vy: player.vy };
+      }
+    }
+
+    for (const npc of gameState.npcs) {
+      if (npc.inWater && npc.stunnedTimer <= 0) {
+        const d = Math.hypot(npc.x - croc.x, npc.y - croc.y);
+        // Slightly prefer player if distances are similar
+        if (d + 35 < bestDist) {
+          bestDist = d;
+          bestSwimmer = { type: 'npc', ref: npc, x: npc.x, y: npc.y, vx: npc.vx, vy: npc.vy };
+        }
+      }
+    }
+
+    return bestSwimmer;
+  }
+
+  function updateCrocodiles(dt) {
+    const slowFactor = gameState.slowMoTimer > 0 ? 0.45 : 1.0;
+    const minRiverY = TOP_BANK_Y + 26;
+    const maxRiverY = BOT_BANK_Y - 26;
+
+    for (const c of gameState.crocs) {
+      c.tailPhase += dt * (c.state === 'CHASE' || c.state === 'ATTACK' ? 14 : 6) * slowFactor;
+      c.rippleTimer -= dt;
+      if (c.rippleTimer <= 0) {
+        spawnRipple(c.x - Math.cos(c.angle) * 24, c.y - Math.sin(c.angle) * 24, 30);
+        c.rippleTimer = c.state === 'CHASE' ? 0.18 : 0.35;
+      }
+
+      const target = findBestTargetForCroc(c);
+
+      switch (c.state) {
+        case 'IDLE': {
+          c.jawOpen = 0.1 + Math.sin(gameState.globalTime * 3 + c.id) * 0.05;
+          if (target) {
+            c.state = 'DETECT';
+            c.stateTimer = 0.32;
+            c.targetEntity = target;
+            sfx.playCrocAlert();
+            break;
+          }
+
+          const dx = c.patrolTargetX - c.x;
+          const dy = c.patrolTargetY - c.y;
+          const dist = Math.hypot(dx, dy);
+          if (dist < 25) {
+            c.patrolTargetX = 120 + Math.random() * (WORLD_W - 240);
+            c.patrolTargetY = minRiverY + 15 + Math.random() * (maxRiverY - minRiverY - 30);
+          } else {
+            const desiredAngle = Math.atan2(dy, dx);
+            c.angle = lerpAngle(c.angle, desiredAngle, dt * 4);
+            c.vx = Math.cos(c.angle) * c.patrolSpeed * slowFactor;
+            c.vy = Math.sin(c.angle) * c.patrolSpeed * slowFactor;
+            c.x += c.vx * dt;
+            c.y += c.vy * dt;
+          }
+          break;
+        }
+
+        case 'DETECT': {
+          c.jawOpen = 0.45;
+          c.stateTimer -= dt;
+          if (target) {
+            const desiredAngle = Math.atan2(target.y - c.y, target.x - c.x);
+            c.angle = lerpAngle(c.angle, desiredAngle, dt * 10);
+          }
+          if (c.stateTimer <= 0) {
+            c.state = target ? 'CHASE' : 'IDLE';
+          }
+          break;
+        }
+
+        case 'CHASE': {
+          c.jawOpen = 0.35 + Math.sin(gameState.globalTime * 12) * 0.15;
+          if (!target) {
+            // Target escaped onto safe land!
+            if (c.targetEntity && c.targetEntity.type === 'player' && player.safeOnLand) {
+              progressMission('escape', 1);
+            }
+            c.targetEntity = null;
+            c.state = 'COOLDOWN';
+            c.stateTimer = 0.75;
+            break;
+          }
+
+          c.targetEntity = target;
+          // Predictive lead targeting: aim slightly ahead of swimmer's velocity vector!
+          const distToTarget = Math.hypot(target.x - c.x, target.y - c.y);
+          const leadTime = Math.min(0.42, distToTarget / Math.max(120, c.chaseSpeed));
+          const predictX = target.x + (target.vx || 0) * leadTime;
+          const predictY = Math.max(minRiverY, Math.min(maxRiverY, target.y + (target.vy || 0) * leadTime));
+
+          const desiredAngle = Math.atan2(predictY - c.y, predictX - c.x);
+          c.angle = lerpAngle(c.angle, desiredAngle, dt * 7.5);
+
+          c.vx = Math.cos(c.angle) * c.chaseSpeed * slowFactor;
+          c.vy = Math.sin(c.angle) * c.chaseSpeed * slowFactor;
+          c.x += c.vx * dt;
+          c.y += c.vy * dt;
+
+          // Trigger lunge attack when within strike range
+          if (distToTarget < c.attackRange) {
+            c.state = 'ATTACK';
+            c.stateTimer = 0.34;
+            const strikeAngle = Math.atan2(target.y - c.y, target.x - c.x);
+            c.angle = strikeAngle;
+            c.attackDirX = Math.cos(strikeAngle);
+            c.attackDirY = Math.sin(strikeAngle);
+            sfx.playCrocSnap();
+            spawnWaterSplash(c.x + c.attackDirX * 28, c.y + c.attackDirY * 28, 12);
+            triggerScreenShake(7, 0.22);
+          }
+          break;
+        }
+
+        case 'ATTACK': {
+          c.jawOpen = 0.85;
+          c.stateTimer -= dt;
+          c.vx = c.attackDirX * c.attackSpeed * slowFactor;
+          c.vy = c.attackDirY * c.attackSpeed * slowFactor;
+          c.x += c.vx * dt;
+          c.y += c.vy * dt;
+
+          if (c.stateTimer <= 0) {
+            c.state = 'COOLDOWN';
+            c.stateTimer = 1.05;
+            c.jawOpen = 0.05;
+          }
+          break;
+        }
+
+        case 'COOLDOWN': {
+          c.jawOpen = 0.12;
+          c.stateTimer -= dt;
+          c.vx *= 0.9;
+          c.vy *= 0.9;
+          c.x += c.vx * dt;
+          c.y += c.vy * dt;
+          if (c.stateTimer <= 0) {
+            c.state = 'IDLE';
+          }
+          break;
+        }
+      }
+
+      // Keep crocodile inside the river channel
+      c.x = Math.max(55, Math.min(WORLD_W - 55, c.x));
+      c.y = Math.max(minRiverY, Math.min(maxRiverY, c.y));
+
+      // Check collision with baits
+      for (let bi = gameState.baits.length - 1; bi >= 0; bi--) {
+        const b = gameState.baits[bi];
+        if (Math.hypot(c.x - b.x, c.y - b.y) < 42) {
+          sfx.playCrocSnap();
+          spawnWaterSplash(b.x, b.y, 14);
+          spawnFloatingText(b.x, b.y - 20, '🐊 MĂM MĂM!', '#fb923c');
+          gameState.baits.splice(bi, 1);
+          c.state = 'COOLDOWN';
+          c.stateTimer = 2.4;
+        }
+      }
+
+      // Check collision with NPC kids in water
+      for (const npc of gameState.npcs) {
+        if (npc.inWater && npc.stunnedTimer <= 0) {
+          const mouthX = c.x + Math.cos(c.angle) * 24;
+          const mouthY = c.y + Math.sin(c.angle) * 24;
+          if (Math.hypot(npc.x - mouthX, npc.y - mouthY) < 34) {
+            sfx.playCrocSnap();
+            spawnWaterSplash(npc.x, npc.y, 14);
+            spawnFloatingText(npc.x, npc.y - 25, 'Á! May quá thoát rồi!', '#fca5a5');
+            npc.y = npc.y < WORLD_H / 2 ? TOP_BANK_Y - 30 : BOT_BANK_Y + 35;
+            npc.stunnedTimer = 2.0;
+            c.state = 'COOLDOWN';
+            c.stateTimer = 1.2;
+          }
+        }
+      }
+
+      // Check collision with Player (ONLY when player is in water!)
+      if (player.inWater && player.invulnTimer <= 0) {
+        const mouthX = c.x + Math.cos(c.angle) * 24;
+        const mouthY = c.y + Math.sin(c.angle) * 24;
+        const hitDist = Math.min(
+          Math.hypot(player.x - mouthX, player.y - mouthY),
+          Math.hypot(player.x - c.x, player.y - c.y)
+        );
+        if (hitDist < 34) {
+          if (player.shieldCount > 0) {
+            // Shield blocks the bite!
+            player.shieldCount--;
+            player.invulnTimer = 2.0;
+            saveData.shieldsBroken++;
+            unlockAchievement('shield_saver');
+            writeSave();
+
+            sfx.playCrocSnap();
+            triggerScreenShake(14, 0.35);
+            spawnWaterSplash(player.x, player.y, 20);
+            spawnFloatingText(player.x, player.y - 30, '🛡️ KHIÊN CHẶN ĐÒN!', '#fde047');
+
+            // Knock croc into cooldown
+            c.state = 'COOLDOWN';
+            c.stateTimer = 1.8;
+            c.x -= Math.cos(c.angle) * 48;
+            c.y = Math.max(minRiverY, Math.min(maxRiverY, c.y - Math.sin(c.angle) * 48));
+          } else {
+            // Game Over!
+            sfx.playCrocSnap();
+            triggerScreenShake(18, 0.45);
+            spawnWaterSplash(player.x, player.y, 26);
+            endGame('BẠN ĐÃ BỊ CÁ SẤU BẮT!', `Bạn đã vượt sông ${gameState.crossingsThisGame} lần và đạt ${gameState.score} điểm.`);
+            return;
+          }
+        }
+      }
+    }
+  }
+
+  function updateParticlesAndRipples(dt) {
+    for (let i = gameState.ripples.length - 1; i >= 0; i--) {
+      const r = gameState.ripples[i];
+      r.r += 32 * dt;
+      r.alpha -= 0.65 * dt;
+      if (r.alpha <= 0 || r.r >= r.maxR) {
+        gameState.ripples.splice(i, 1);
+      }
+    }
+
+    for (let i = gameState.particles.length - 1; i >= 0; i--) {
+      const p = gameState.particles[i];
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vy += 90 * dt;
+      p.life -= dt;
+      p.alpha = Math.max(0, p.life / p.maxLife);
+      if (p.life <= 0) {
+        gameState.particles.splice(i, 1);
+      }
+    }
+
+    for (let i = gameState.floatingTexts.length - 1; i >= 0; i--) {
+      const ft = gameState.floatingTexts[i];
+      ft.y -= 28 * dt;
+      ft.life -= dt;
+      if (ft.life <= 0) {
+        gameState.floatingTexts.splice(i, 1);
+      }
+    }
+  }
+
+  function lerpAngle(a, b, t) {
+    let diff = b - a;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+    while (diff > Math.PI) diff -= Math.PI * 2;
+    return a + diff * Math.min(1, t);
+  }
+
+  // ==========================================
+  // 12. CANVAS RENDERING (2D CHIBI CARTOON ART)
+  // ==========================================
+  function renderGame() {
+    ctx.save();
+
+    // Screen shake offset
+    if (gameState.shakeTime > 0) {
+      const mag = gameState.shakeIntensity * (gameState.shakeTime / 0.35);
+      const ox = (Math.random() - 0.5) * mag * 2;
+      const oy = (Math.random() - 0.5) * mag * 2;
+      ctx.translate(ox, oy);
+    }
+
+    drawRiverAndBanks();
+    drawSceneryBack();
+    drawWoodenDocks();
+    drawRipples();
+    drawPowerupsAndBaits();
+
+    // Draw crocodiles in the river
+    for (const c of gameState.crocs) {
+      drawCrocodile(c);
+    }
+
+    // Sort characters by Y for natural 2.5D top-down depth
+    const charactersToDraw = [
+      ...gameState.npcs.map(n => ({ isPlayer: false, entity: n, y: n.y })),
+      { isPlayer: true, entity: player, y: player.y }
+    ].sort((a, b) => a.y - b.y);
+
+    for (const item of charactersToDraw) {
+      if (item.isPlayer) {
+        drawChibiKid(player, CHARACTERS[saveData.selectedChar] || CHARACTERS[0], true);
+      } else {
+        drawChibiKid(item.entity, item.entity.profile, false);
+      }
+    }
+
+    drawParticles();
+    drawFloatingTexts();
+
+    // Slow-mo frosty border tint if active
+    if (gameState.slowMoTimer > 0) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(192, 132, 252, 0.55)';
+      ctx.lineWidth = 10;
+      ctx.strokeRect(5, 5, WORLD_W - 10, WORLD_H - 10);
+      ctx.restore();
+    }
+
+    ctx.restore();
+  }
+
+  function drawRiverAndBanks() {
+    const t = gameState.globalTime;
+
+    // 1. River water gradient
+    const riverGrad = ctx.createLinearGradient(0, TOP_BANK_Y, 0, BOT_BANK_Y);
+    riverGrad.addColorStop(0, '#0ea5e9');
+    riverGrad.addColorStop(0.5, '#0284c7');
+    riverGrad.addColorStop(1, '#0ea5e9');
+    ctx.fillStyle = riverGrad;
+    ctx.fillRect(0, TOP_BANK_Y - 10, WORLD_W, BOT_BANK_Y - TOP_BANK_Y + 20);
+
+    // Animated horizontal water wave streaks
+    ctx.save();
+    ctx.strokeStyle = 'rgba(186, 230, 253, 0.35)';
+    ctx.lineWidth = 3.5;
+    ctx.lineCap = 'round';
+    for (let row = 0; row < 5; row++) {
+      const wy = TOP_BANK_Y + 42 + row * 48;
+      for (let col = 0; col < 7; col++) {
+        const wx = ((col * 190 + t * (28 + (row % 2) * 18)) % (WORLD_W + 160)) - 80;
+        ctx.beginPath();
+        ctx.moveTo(wx, wy + Math.sin(t * 2 + col) * 3);
+        ctx.quadraticCurveTo(wx + 35, wy - 6, wx + 70, wy + Math.sin(t * 2 + col) * 3);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+
+    // Shoreline white foam animation
+    ctx.save();
+    ctx.fillStyle = 'rgba(224, 242, 254, 0.72)';
+    for (let x = 0; x <= WORLD_W; x += 38) {
+      const foamR = 14 + Math.sin(t * 3.5 + x * 0.05) * 4;
+      ctx.beginPath();
+      ctx.arc(x, TOP_BANK_Y + 4, foamR, 0, Math.PI * 2);
+      ctx.arc(x, BOT_BANK_Y - 4, foamR, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // 2. Top Sandy Bank
+    const topSandGrad = ctx.createLinearGradient(0, 0, 0, TOP_BANK_Y);
+    topSandGrad.addColorStop(0, '#eab308');
+    topSandGrad.addColorStop(0.3, '#f6c453');
+    topSandGrad.addColorStop(1, '#f3b749');
+    ctx.fillStyle = topSandGrad;
+    ctx.fillRect(0, 0, WORLD_W, TOP_BANK_Y);
+
+    // 3. Bottom Sandy Bank
+    const botSandGrad = ctx.createLinearGradient(0, BOT_BANK_Y, 0, WORLD_H);
+    botSandGrad.addColorStop(0, '#f3b749');
+    botSandGrad.addColorStop(0.7, '#f6c453');
+    botSandGrad.addColorStop(1, '#eab308');
+    ctx.fillStyle = botSandGrad;
+    ctx.fillRect(0, BOT_BANK_Y, WORLD_W, WORLD_H - BOT_BANK_Y);
+
+    // Green lush grass borders at extreme top and bottom edges
+    ctx.fillStyle = '#4d9e34';
+    ctx.fillRect(0, 0, WORLD_W, 68);
+    ctx.fillRect(0, WORLD_H - 58, WORLD_W, 58);
+
+    // Scalloped sandy stone ledges along both riverbanks (matching concept image)
+    drawBankStoneLedge(TOP_BANK_Y, 1);
+    drawBankStoneLedge(BOT_BANK_Y, -1);
+
+    // Subtle sand pebbles
+    ctx.fillStyle = 'rgba(180, 110, 30, 0.25)';
+    for (let i = 0; i < 28; i++) {
+      const px = (i * 137) % WORLD_W;
+      const py = 95 + ((i * 53) % 120);
+      ctx.beginPath();
+      ctx.ellipse(px, py, 6, 3.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse((px + 300) % WORLD_W, BOT_BANK_Y + 35 + ((i * 41) % 110), 6, 3.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function drawBankStoneLedge(edgeY, dir) {
+    ctx.save();
+    const blockW = 50;
+    for (let x = 0; x < WORLD_W; x += blockW) {
+      // Shadow under ledge
+      ctx.fillStyle = 'rgba(15, 65, 110, 0.35)';
+      ctx.beginPath();
+      ctx.roundRect(x + 2, edgeY + (dir > 0 ? -4 : -14), blockW - 4, 18, 7);
+      ctx.fill();
+
+      // Sand ledge block
+      ctx.fillStyle = '#d99b38';
+      ctx.strokeStyle = '#9c6615';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(x + 2, edgeY - 10, blockW - 4, 18, 7);
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawSceneryBack() {
+    // River rocks & lilypads
+    for (const rock of scenery.riverRocks) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(255,255,255,0.45)';
+      ctx.beginPath();
+      ctx.ellipse(rock.x, rock.y + 3, rock.rx + 5, rock.ry + 4, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#64748b';
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.ellipse(rock.x, rock.y, rock.rx, rock.ry, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.beginPath();
+      ctx.ellipse(rock.x - 4, rock.y - 3, rock.rx * 0.55, rock.ry * 0.45, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    for (const pad of scenery.lilypads) {
+      ctx.save();
+      ctx.translate(pad.x, pad.y);
+      ctx.rotate(pad.angle + Math.sin(gameState.globalTime * 1.5 + pad.x) * 0.08);
+      ctx.fillStyle = '#4ade80';
+      ctx.strokeStyle = '#15803d';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0, 0, pad.r, 0.25, Math.PI * 2 - 0.25);
+      ctx.lineTo(0, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Grass tufts on sandy shore
+    for (const tuft of scenery.tufts) {
+      ctx.save();
+      ctx.fillStyle = '#22c55e';
+      ctx.strokeStyle = '#14532d';
+      ctx.lineWidth = 1.8;
+      for (let i = -1; i <= 1; i++) {
+        ctx.beginPath();
+        ctx.ellipse(tuft.x + i * 6, tuft.y, 4, 10, i * 0.35, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // Wooden fences along top & bottom borders
+    for (const f of scenery.fences) {
+      ctx.save();
+      ctx.fillStyle = '#8b4d19';
+      ctx.strokeStyle = '#4a2508';
+      ctx.lineWidth = 2;
+      // Horizontal rails
+      ctx.fillRect(f.x, f.y + 6, f.w, 7);
+      ctx.strokeRect(f.x, f.y + 6, f.w, 7);
+      ctx.fillRect(f.x, f.y + 18, f.w, 7);
+      ctx.strokeRect(f.x, f.y + 18, f.w, 7);
+      // Vertical posts
+      for (let px = f.x; px <= f.x + f.w; px += 36) {
+        ctx.fillStyle = '#a45a21';
+        ctx.fillRect(px - 5, f.y, 10, 30);
+        ctx.strokeRect(px - 5, f.y, 10, 30);
+      }
+      ctx.restore();
+    }
+
+    // Bushes
+    for (const b of scenery.bushes) {
+      ctx.save();
+      ctx.fillStyle = '#22c55e';
+      ctx.strokeStyle = '#14532d';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(b.x - b.r * 0.5, b.y + 4, b.r * 0.75, 0, Math.PI * 2);
+      ctx.arc(b.x + b.r * 0.5, b.y + 4, b.r * 0.75, 0, Math.PI * 2);
+      ctx.arc(b.x, b.y - 4, b.r * 0.9, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Trees
+    for (const tr of scenery.trees) {
+      ctx.save();
+      // Trunk
+      ctx.fillStyle = '#78350f';
+      ctx.strokeStyle = '#3b1b04';
+      ctx.lineWidth = 3;
+      ctx.fillRect(tr.x - 12, tr.y + 10, 24, 34);
+      ctx.strokeRect(tr.x - 12, tr.y + 10, 24, 34);
+
+      // Canopy
+      ctx.fillStyle = '#16a34a';
+      ctx.beginPath();
+      ctx.arc(tr.x - 24, tr.y + 4, tr.r * 0.65, 0, Math.PI * 2);
+      ctx.arc(tr.x + 24, tr.y + 4, tr.r * 0.65, 0, Math.PI * 2);
+      ctx.arc(tr.x, tr.y - 12, tr.r * 0.82, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#4ade80';
+      ctx.beginPath();
+      ctx.arc(tr.x - 8, tr.y - 18, tr.r * 0.45, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  function drawWoodenDocks() {
+    for (const d of DOCKS) {
+      ctx.save();
+      // Shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.28)';
+      ctx.fillRect(d.x + 4, d.y + 6, d.w, d.h);
+
+      // Side rails
+      ctx.fillStyle = '#6b3710';
+      ctx.strokeStyle = '#3b1d05';
+      ctx.lineWidth = 2.5;
+      ctx.fillRect(d.x + 4, d.y, 10, d.h);
+      ctx.strokeRect(d.x + 4, d.y, 10, d.h);
+      ctx.fillRect(d.x + d.w - 14, d.y, 10, d.h);
+      ctx.strokeRect(d.x + d.w - 14, d.y, 10, d.h);
+
+      // Planks
+      for (let py = d.y + 4; py < d.y + d.h - 4; py += 16) {
+        ctx.fillStyle = '#a45a21';
+        ctx.fillRect(d.x + 2, py, d.w - 4, 12);
+        ctx.strokeRect(d.x + 2, py, d.w - 4, 12);
+      }
+
+      // Corner posts
+      ctx.fillStyle = '#5c2e09';
+      ctx.beginPath();
+      ctx.arc(d.x + 9, d.y + 8, 6, 0, Math.PI * 2);
+      ctx.arc(d.x + d.w - 9, d.y + 8, 6, 0, Math.PI * 2);
+      ctx.arc(d.x + 9, d.y + d.h - 8, 6, 0, Math.PI * 2);
+      ctx.arc(d.x + d.w - 9, d.y + d.h - 8, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  function drawRipples() {
+    ctx.save();
+    for (const r of gameState.ripples) {
+      ctx.strokeStyle = `rgba(224, 242, 254, ${Math.max(0, r.alpha).toFixed(2)})`;
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.ellipse(r.x, r.y, r.r, r.r * 0.62, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawPowerupsAndBaits() {
+    for (const p of gameState.powerups) {
+      const bobY = p.y + Math.sin(p.bobPhase) * 4;
+      ctx.save();
+      // Outer glow
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.beginPath();
+      ctx.arc(p.x, bobY, p.r + 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Bubble circle
+      ctx.fillStyle = '#fffbeb';
+      ctx.strokeStyle = p.color;
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.arc(p.x, bobY, p.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.font = '20px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(p.icon, p.x, bobY + 1);
+      ctx.restore();
+    }
+
+    for (const b of gameState.baits) {
+      const bobY = b.y + Math.sin(gameState.globalTime * 6) * 3;
+      ctx.save();
+      ctx.fillStyle = 'rgba(251, 146, 60, 0.35)';
+      ctx.beginPath();
+      ctx.arc(b.x, bobY, 24, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.font = '24px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('🍖', b.x, bobY);
+      ctx.restore();
+    }
+  }
+
+  function drawCrocodile(c) {
+    ctx.save();
+    ctx.translate(c.x, c.y);
+
+    // Alert "!" icon above crocodile head when DETECT, CHASE, or ATTACK (just like concept art!)
+    if (c.state === 'DETECT' || c.state === 'CHASE' || c.state === 'ATTACK') {
+      ctx.save();
+      const bounce = Math.abs(Math.sin(gameState.globalTime * 10)) * 6;
+      ctx.translate(0, -44 - bounce);
+      ctx.font = '900 28px "Fredoka", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = '#ffffff';
+      ctx.strokeText('!', 0, 0);
+      ctx.fillStyle = c.state === 'DETECT' ? '#facc15' : '#ef4444';
+      ctx.fillText('!', 0, 0);
+      ctx.restore();
+    } else if (c.state === 'COOLDOWN') {
+      ctx.save();
+      ctx.translate(0, -40);
+      ctx.font = '800 15px "Nunito", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#bae6fd';
+      ctx.fillText('💤', 0, 0);
+      ctx.restore();
+    }
+
+    // Rotate crocodile toward movement direction, flipping vertically if facing left so it stays upright
+    const facingLeft = Math.cos(c.angle) < 0;
+    ctx.rotate(c.angle);
+    if (facingLeft) {
+      ctx.scale(1, -1);
+    }
+
+    // Water foam ring around body
+    ctx.fillStyle = 'rgba(224, 242, 254, 0.65)';
+    ctx.beginPath();
+    ctx.ellipse(-6, 10, 44, 16, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Swinging segmented tail
+    const tailWag = Math.sin(c.tailPhase) * 9;
+    ctx.fillStyle = '#15803d';
+    ctx.strokeStyle = '#052e16';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(-22, -6);
+    ctx.quadraticCurveTo(-45, -10 + tailWag * 0.5, -66, tailWag);
+    ctx.quadraticCurveTo(-45, 12 + tailWag * 0.5, -22, 8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Torso / Back ridges
+    ctx.fillStyle = '#16a34a';
+    ctx.beginPath();
+    ctx.ellipse(-6, 2, 28, 16, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Dark green dorsal scales
+    ctx.fillStyle = '#14532d';
+    for (let sx = -26; sx <= 4; sx += 10) {
+      ctx.beginPath();
+      ctx.moveTo(sx, -12);
+      ctx.lineTo(sx + 5, -19);
+      ctx.lineTo(sx + 9, -12);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Lower Jaw
+    const jawAngle = c.jawOpen * 0.55;
+    ctx.save();
+    ctx.translate(10, 4);
+    ctx.rotate(jawAngle);
+    ctx.fillStyle = '#4ade80';
+    ctx.beginPath();
+    ctx.roundRect(0, -4, 34, 11, 5);
+    ctx.fill();
+    ctx.stroke();
+
+    // Red mouth interior
+    ctx.fillStyle = '#dc2626';
+    ctx.beginPath();
+    ctx.roundRect(3, -4, 26, 5, 2);
+    ctx.fill();
+
+    // Lower sharp white teeth
+    ctx.fillStyle = '#ffffff';
+    for (let tx = 6; tx <= 28; tx += 7) {
+      ctx.beginPath();
+      ctx.moveTo(tx, -4);
+      ctx.lineTo(tx + 2.5, -10);
+      ctx.lineTo(tx + 5, -4);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // Upper Jaw & Snout
+    ctx.save();
+    ctx.translate(10, -2);
+    ctx.rotate(-jawAngle);
+    ctx.fillStyle = '#22c55e';
+    ctx.beginPath();
+    ctx.roundRect(-2, -10, 38, 13, 6);
+    ctx.fill();
+    ctx.stroke();
+
+    // Upper sharp white teeth
+    ctx.fillStyle = '#ffffff';
+    for (let tx = 6; tx <= 30; tx += 7) {
+      ctx.beginPath();
+      ctx.moveTo(tx, 3);
+      ctx.lineTo(tx + 2.5, 9);
+      ctx.lineTo(tx + 5, 3);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Snout nostril bump
+    ctx.fillStyle = '#16a34a';
+    ctx.beginPath();
+    ctx.arc(31, -10, 4.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Fierce yellow eye ridge
+    ctx.fillStyle = '#15803d';
+    ctx.beginPath();
+    ctx.arc(6, -12, 7.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#fde047';
+    ctx.beginPath();
+    ctx.arc(7, -12, 4.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Vertical slit pupil
+    ctx.fillStyle = '#000000';
+    ctx.beginPath();
+    ctx.ellipse(8, -12, 1.5, 3.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Angry eyebrow
+    ctx.strokeStyle = '#052e16';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(2, -17);
+    ctx.lineTo(12, -14);
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.restore();
+  }
+
+  function drawChibiKid(ent, profile, isMainPlayer) {
+    ctx.save();
+    ctx.translate(ent.x, ent.y);
+
+    // Blink effect if invulnerable
+    if (isMainPlayer && ent.invulnTimer > 0 && Math.floor(ent.invulnTimer * 10) % 2 === 0) {
+      ctx.globalAlpha = 0.5;
+    }
+
+    const isMoving = Math.hypot(ent.vx, ent.vy) > 5;
+    const swing = isMoving ? Math.sin(ent.animPhase) * 7 : 0;
+    const bob = isMoving ? Math.abs(Math.cos(ent.animPhase)) * 3 : Math.sin(gameState.globalTime * 3) * 1.2;
+
+    // 1. Player indicator ring & shadow
+    if (isMainPlayer) {
+      ctx.save();
+      ctx.strokeStyle = ent.inWater ? '#facc15' : '#4ade80';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(0, 16, 22, 10, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    ctx.fillStyle = 'rgba(0,0,0,0.26)';
+    ctx.beginPath();
+    ctx.ellipse(0, 16, 15, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 2. Legs / Shoes (partially submerged if in water)
+    if (!ent.inWater) {
+      ctx.strokeStyle = '#271709';
+      ctx.lineWidth = 2.2;
+      // Left leg
+      ctx.fillStyle = profile.pants;
+      ctx.beginPath();
+      ctx.roundRect(-9, 3 + swing * 0.5, 7, 11, 3);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = profile.shoes;
+      ctx.beginPath();
+      ctx.ellipse(-6, 15 + swing * 0.5, 5, 3.2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Right leg
+      ctx.fillStyle = profile.pants;
+      ctx.beginPath();
+      ctx.roundRect(2, 3 - swing * 0.5, 7, 11, 3);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = profile.shoes;
+      ctx.beginPath();
+      ctx.ellipse(5, 15 - swing * 0.5, 5, 3.2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    // 3. Chibi Torso & Arms
+    ctx.translate(0, -bob);
+    ctx.strokeStyle = '#271709';
+    ctx.lineWidth = 2.4;
+
+    // Swinging arms
+    ctx.fillStyle = '#fed7aa';
+    ctx.beginPath();
+    ctx.ellipse(-13, -3 - swing * 0.4, 4.5, 7, 0.35, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.ellipse(13, -3 + swing * 0.4, 4.5, 7, -0.35, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Shirt
+    ctx.fillStyle = profile.shirt;
+    ctx.beginPath();
+    ctx.roundRect(-11, -11, 22, 17, 7);
+    ctx.fill();
+    ctx.stroke();
+
+    // 4. Big Cute Chibi Head
+    ctx.fillStyle = '#fed7aa';
+    ctx.beginPath();
+    ctx.arc(0, -24, 15.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Pigtails for girl character
+    if (profile.girl) {
+      ctx.fillStyle = profile.hair;
+      ctx.beginPath();
+      ctx.arc(-17, -27, 6.5, 0, Math.PI * 2);
+      ctx.arc(17, -27, 6.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    // Hair cap & bangs
+    ctx.fillStyle = profile.hair;
+    ctx.beginPath();
+    ctx.arc(0, -27, 16, Math.PI * 0.92, Math.PI * 2.08);
+    ctx.lineTo(12, -23);
+    ctx.lineTo(6, -26);
+    ctx.lineTo(0, -22);
+    ctx.lineTo(-6, -26);
+    ctx.lineTo(-12, -23);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Cute Eyes & Blush
+    const lookX = Math.max(-2.5, Math.min(2.5, ent.facingX * 2.5));
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath();
+    ctx.ellipse(-5.5 + lookX, -23, 2.3, 3.1, 0, 0, Math.PI * 2);
+    ctx.ellipse(5.5 + lookX, -23, 2.3, 3.1, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Eye highlights
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(-6 + lookX, -24.2, 1, 0, Math.PI * 2);
+    ctx.arc(5 + lookX, -24.2, 1, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Rosy cheeks
+    ctx.fillStyle = 'rgba(244, 63, 94, 0.45)';
+    ctx.beginPath();
+    ctx.ellipse(-9.5 + lookX * 0.5, -19.5, 3, 1.8, 0, 0, Math.PI * 2);
+    ctx.ellipse(9.5 + lookX * 0.5, -19.5, 3, 1.8, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Mouth (open "O" when in water or scared, happy smile on shore)
+    ctx.strokeStyle = '#7c2d12';
+    ctx.lineWidth = 1.8;
+    if (ent.inWater) {
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.ellipse(lookX, -17.5, 3, 3.2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    } else {
+      ctx.beginPath();
+      ctx.arc(lookX, -19, 3.2, 0.15 * Math.PI, 0.85 * Math.PI);
+      ctx.stroke();
+    }
+
+    // Water splash waist ring if wading in river
+    if (ent.inWater) {
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.lineWidth = 2.8;
+      ctx.beginPath();
+      ctx.arc(0, 6, 15, 0.1 * Math.PI, 0.9 * Math.PI);
+      ctx.stroke();
+    }
+
+    // Active Shield bubble around player
+    if (isMainPlayer && ent.shieldCount > 0) {
+      ctx.strokeStyle = 'rgba(250, 204, 21, 0.9)';
+      ctx.fillStyle = 'rgba(254, 240, 138, 0.22)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(0, -12, 30, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    // "BẠN" label above main player
+    if (isMainPlayer) {
+      ctx.font = '900 12px "Nunito", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#fef08a';
+      ctx.strokeStyle = '#3b1d05';
+      ctx.lineWidth = 3.5;
+      ctx.strokeText('▼ BẠN', 0, -45);
+      ctx.fillText('▼ BẠN', 0, -45);
+    }
+
+    ctx.restore();
+  }
+
+  function drawParticles() {
+    ctx.save();
+    for (const p of gameState.particles) {
+      ctx.globalAlpha = p.alpha;
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawFloatingTexts() {
+    ctx.save();
+    ctx.font = '900 17px "Fredoka", sans-serif';
+    ctx.textAlign = 'center';
+    for (const ft of gameState.floatingTexts) {
+      ctx.globalAlpha = Math.max(0, ft.life / ft.maxLife);
+      ctx.strokeStyle = '#271709';
+      ctx.lineWidth = 4;
+      ctx.strokeText(ft.text, ft.x, ft.y);
+      ctx.fillStyle = ft.color;
+      ctx.fillText(ft.text, ft.x, ft.y);
+    }
+    ctx.restore();
+  }
+
+  // ==========================================
+  // 13. HUD & UI SYNCHRONIZATION
+  // ==========================================
+  function updateHUD() {
+    const secs = Math.max(0, Math.ceil(gameState.timeLeft));
+    const mm = String(Math.floor(secs / 60)).padStart(2, '0');
+    const ss = String(secs % 60).padStart(2, '0');
+    document.getElementById('hudTime').textContent = `${mm}:${ss}`;
+    document.getElementById('hudScore').textContent = gameState.score;
+    document.getElementById('hudRound').textContent = gameState.round;
+
+    const totalCrocs = gameState.crocs.length;
+    const alertCrocs = gameState.crocs.filter(c => c.state === 'DETECT' || c.state === 'CHASE' || c.state === 'ATTACK').length;
+    document.getElementById('hudCrocs').textContent = `${totalCrocs}/${totalCrocs}`;
+
+    const zoneEl = document.getElementById('hudZoneStatus');
+    const zoneIcon = document.getElementById('hudZoneIcon');
+    const zoneText = document.getElementById('hudZoneText');
+
+    if (player.inWater) {
+      zoneEl.className = 'hud-pill danger-badge';
+      zoneIcon.textContent = '⚠️';
+      zoneText.textContent = alertCrocs > 0 ? 'NGUY HIỂM! CÁ SẤU ĐANG ĐUỔI!' : 'DƯỚI NƯỚC - CẨN THẬN!';
+    } else {
+      zoneEl.className = 'hud-pill safe-badge';
+      zoneIcon.textContent = '🏝️';
+      zoneText.textContent = 'TRÊN BỜ - AN TOÀN';
+    }
+
+    const stamPct = Math.max(0, Math.min(100, (player.stamina / player.maxStamina) * 100));
+    document.getElementById('hudStaminaFill').style.width = `${stamPct}%`;
+    document.getElementById('hudBaitCount').textContent = `x${player.baitInventory}`;
+
+    // Active buffs pills
+    const buffsContainer = document.getElementById('hudActiveBuffs');
+    const chips = [];
+    if (player.speedTimer > 0) {
+      chips.push(`<div class="buff-chip">👟 Tăng tốc ${player.speedTimer.toFixed(1)}s</div>`);
+    }
+    if (player.shieldCount > 0) {
+      chips.push(`<div class="buff-chip" style="border-color:#facc15;">🛡️ Khiên x${player.shieldCount}</div>`);
+    }
+    if (gameState.slowMoTimer > 0) {
+      chips.push(`<div class="buff-chip" style="border-color:#c084fc;">⏳ Chậm ${gameState.slowMoTimer.toFixed(1)}s</div>`);
+    }
+    buffsContainer.innerHTML = chips.join('');
+  }
+
+  function updateMissionHUD() {
+    const m = gameState.mission;
+    document.getElementById('hudMissionText').textContent = m.text;
+    document.getElementById('hudMissionProgress').textContent = m.completed ? 'HOÀN THÀNH ✓' : `${m.current}/${m.target}`;
+  }
+
+  function updateHomeStatsUI() {
+    document.getElementById('homeHighScore').textContent = saveData.highScore;
+    document.getElementById('homeTotalCross').textContent = saveData.totalCrossings;
+  }
+
+  function renderAchievementsModal() {
+    const list = document.getElementById('achievementsList');
+    list.innerHTML = ACHIEVEMENTS_META.map(a => {
+      const unlocked = !!saveData.achievements[a.id];
+      return `
+        <div class="achievement-item ${unlocked ? 'unlocked' : ''}">
+          <div style="font-size:28px;">${a.icon}</div>
+          <div style="flex:1;">
+            <div style="font-weight:900;font-size:15px;">${a.title} ${unlocked ? '✅' : '🔒'}</div>
+            <div style="font-size:12.5px;font-weight:700;color:#5c3310;">${a.desc}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function applyTouchUIVisibility() {
+    const bar = document.getElementById('touchControlsBar');
+    bar.style.display = saveData.settings.touchUI ? 'flex' : 'none';
+  }
+
+  // ==========================================
+  // 14. UI EVENT LISTENERS & RESIZE
+  // ==========================================
+  function setupUIListeners() {
+    // Character selection cards
+    const charCards = document.querySelectorAll('#charSelectContainer .char-card');
+    charCards.forEach(card => {
+      const idx = Number(card.getAttribute('data-char'));
+      if (idx === saveData.selectedChar) card.classList.add('selected');
+      else card.classList.remove('selected');
+
+      card.addEventListener('click', () => {
+        sfx.init();
+        saveData.selectedChar = idx;
+        writeSave();
+        charCards.forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        sfx.playStep(false);
+      });
+    });
+
+    // Main Menu Buttons
+    document.getElementById('btnStartGame').addEventListener('click', startNewGame);
+
+    document.getElementById('btnOpenGuide').addEventListener('click', () => {
+      sfx.init();
+      document.getElementById('guideModal').classList.remove('hidden');
+    });
+    document.getElementById('btnCloseGuide').addEventListener('click', () => {
+      document.getElementById('guideModal').classList.add('hidden');
+    });
+
+    document.getElementById('btnOpenSettings').addEventListener('click', () => {
+      sfx.init();
+      syncSettingsTogglesUI();
+      document.getElementById('settingsModal').classList.remove('hidden');
+    });
+    document.getElementById('btnCloseSettings').addEventListener('click', () => {
+      document.getElementById('settingsModal').classList.add('hidden');
+    });
+
+    document.getElementById('btnOpenAchievements').addEventListener('click', () => {
+      sfx.init();
+      renderAchievementsModal();
+      document.getElementById('achievementsModal').classList.remove('hidden');
+    });
+    document.getElementById('btnCloseAchievements').addEventListener('click', () => {
+      document.getElementById('achievementsModal').classList.add('hidden');
+    });
+
+    // HUD & Pause Buttons
+    document.getElementById('btnPauseHud').addEventListener('click', () => {
+      if (gameState.mode === 'playing') pauseGame();
+      else if (gameState.mode === 'paused') resumeGame();
+    });
+
+    document.getElementById('btnMuteHud').addEventListener('click', () => {
+      sfx.init();
+      saveData.settings.sound = !saveData.settings.sound;
+      writeSave();
+      syncMuteButtonUI();
+      if (!saveData.settings.sound) sfx.stopMusic();
+      else if (gameState.mode === 'playing') sfx.startMusic();
+    });
+
+    document.getElementById('btnResumeGame').addEventListener('click', resumeGame);
+    document.getElementById('btnRestartFromPause').addEventListener('click', startNewGame);
+    document.getElementById('btnHomeFromPause').addEventListener('click', returnToHome);
+
+    document.getElementById('btnPlayAgain').addEventListener('click', startNewGame);
+    document.getElementById('btnGoHome').addEventListener('click', returnToHome);
+
+    // Settings Toggles
+    const bindToggle = (id, key) => {
+      const el = document.getElementById(id);
+      el.addEventListener('click', () => {
+        sfx.init();
+        saveData.settings[key] = !saveData.settings[key];
+        writeSave();
+        syncSettingsTogglesUI();
+        if (key === 'touchUI') applyTouchUIVisibility();
+      });
+    };
+    bindToggle('toggleSound', 'sound');
+    bindToggle('toggleMusic', 'music');
+    bindToggle('toggleShake', 'shake');
+    bindToggle('toggleTouchUI', 'touchUI');
+
+    const diffSelect = document.getElementById('selectDifficulty');
+    diffSelect.value = saveData.settings.difficulty || 'normal';
+    diffSelect.addEventListener('change', (e) => {
+      saveData.settings.difficulty = e.target.value;
+      writeSave();
+    });
+  }
+
+  function syncMuteButtonUI() {
+    document.getElementById('btnMuteHud').textContent = saveData.settings.sound ? '🔊' : '🔇';
+  }
+
+  function syncSettingsTogglesUI() {
+    const setSwitch = (id, val) => {
+      const el = document.getElementById(id);
+      el.classList.toggle('on', !!val);
+      el.setAttribute('aria-checked', val ? 'true' : 'false');
+    };
+    setSwitch('toggleSound', saveData.settings.sound);
+    setSwitch('toggleMusic', saveData.settings.music);
+    setSwitch('toggleShake', saveData.settings.shake);
+    setSwitch('toggleTouchUI', saveData.settings.touchUI);
+    syncMuteButtonUI();
+  }
+
+  function resizeCanvas() {
+    const wrapper = document.getElementById('gameWrapper');
+    const ww = wrapper.clientWidth;
+    const wh = wrapper.clientHeight;
+    const targetAspect = WORLD_W / WORLD_H;
+    let cw = ww;
+    let ch = cw / targetAspect;
+    if (ch > wh) {
+      ch = wh;
+      cw = ch * targetAspect;
+    }
+    canvas.style.width = `${Math.floor(cw)}px`;
+    canvas.style.height = `${Math.floor(ch)}px`;
+    renderGame();
+  }
+
+  window.addEventListener('resize', resizeCanvas);
+
+  // ==========================================
+  // 15. INITIALIZATION & MAIN ANIMATION LOOP
+  // ==========================================
+  let lastFrameTime = performance.now();
+  let animFrameId = null;
+
+  function mainLoop(now) {
+    const dt = Math.min(0.05, (now - lastFrameTime) / 1000);
+    lastFrameTime = now;
+    updateGame(dt);
+    renderGame();
+    animFrameId = requestAnimationFrame(mainLoop);
+  }
+
+  window.onload = () => {
+    setupRoundEntities(1);
+    setupUIListeners();
+    syncSettingsTogglesUI();
+    updateHomeStatsUI();
+    resizeCanvas();
+    if (animFrameId) cancelAnimationFrame(animFrameId);
+    lastFrameTime = performance.now();
+    animFrameId = requestAnimationFrame(mainLoop);
+  };
+})();
+</script>
+</body>
+</html>

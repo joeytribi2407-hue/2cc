@@ -1,0 +1,3328 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Rồng Rắn Lên Mây - Game Dân Gian Việt Nam 2D</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap');
+
+  :root {
+    --wood-dark: #5c3310;
+    --wood-mid: #8b4d19;
+    --wood-light: #b86b28;
+    --wood-border: #3d1f05;
+    --gold-top: #ffe14d;
+    --gold-mid: #ffae00;
+    --gold-bot: #e07b00;
+    --red-accent: #e62e25;
+    --cream-text: #fff8eb;
+    --green-grass: #5ab535;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #1d3510;
+    font-family: 'Baloo 2', 'Nunito', system-ui, -apple-system, sans-serif;
+    color: var(--cream-text);
+    touch-action: none;
+  }
+
+  #game-wrapper {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  canvas#gameCanvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    cursor: crosshair;
+  }
+
+  /* Wooden Board UI Elements */
+  .wood-panel {
+    background: linear-gradient(180deg, #9e5a21 0%, #784012 55%, #5c300c 100%);
+    border: 3px solid var(--wood-border);
+    border-radius: 16px;
+    box-shadow: 
+      inset 0 2px 1px rgba(255, 210, 150, 0.35),
+      inset 0 -3px 2px rgba(40, 18, 3, 0.6),
+      0 6px 12px rgba(0, 0, 0, 0.45);
+    color: var(--cream-text);
+    text-shadow: 0 2px 3px rgba(0,0,0,0.75);
+    position: relative;
+  }
+
+  .wood-btn {
+    background: linear-gradient(180deg, #9f5a20 0%, #7d4314 55%, #63330c 100%);
+    border: 3px solid #3a1d05;
+    border-radius: 14px;
+    box-shadow: 
+      inset 0 2px 1px rgba(255, 215, 160, 0.4),
+      inset 0 -4px 0 rgba(45, 20, 4, 0.7),
+      0 5px 10px rgba(0,0,0,0.45);
+    color: #fff9ed;
+    font-family: 'Baloo 2', sans-serif;
+    font-weight: 800;
+    font-size: 1.2rem;
+    padding: 10px 20px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    text-shadow: 0 2px 3px rgba(0,0,0,0.8);
+    transition: transform 0.1s ease, filter 0.15s ease;
+  }
+
+  .wood-btn:hover {
+    filter: brightness(1.08);
+    transform: translateY(-2px);
+  }
+
+  .wood-btn:active {
+    transform: translateY(2px);
+    box-shadow: 
+      inset 0 2px 2px rgba(0,0,0,0.5),
+      0 2px 4px rgba(0,0,0,0.4);
+  }
+
+  .gold-btn {
+    background: linear-gradient(180deg, #ffe659 0%, #ffae00 60%, #e07b00 100%);
+    border: 4px solid #6b3200;
+    border-radius: 20px;
+    box-shadow: 
+      inset 0 3px 1px rgba(255, 255, 255, 0.7),
+      inset 0 -5px 0 rgba(160, 70, 0, 0.65),
+      0 7px 14px rgba(0,0,0,0.5);
+    color: #ffffff;
+    font-family: 'Baloo 2', sans-serif;
+    font-weight: 800;
+    font-size: 1.65rem;
+    padding: 12px 28px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    text-shadow: 
+      -2px -2px 0 #592500,  
+       2px -2px 0 #592500,
+      -2px  2px 0 #592500,
+       2px  2px 0 #592500,
+       0 4px 5px rgba(0,0,0,0.65);
+    transition: transform 0.1s ease, filter 0.15s ease;
+  }
+
+  .gold-btn:hover {
+    filter: brightness(1.07);
+    transform: translateY(-2px) scale(1.02);
+  }
+
+  .gold-btn:active {
+    transform: translateY(2px) scale(0.99);
+  }
+
+  /* Top HUD Bar */
+  #hud-bar {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    pointer-events: none;
+    z-index: 20;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .hud-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    pointer-events: auto;
+    flex-wrap: wrap;
+  }
+
+  .hud-badge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 16px;
+    min-width: 125px;
+    border-radius: 16px;
+  }
+
+  .hud-icon {
+    font-size: 1.7rem;
+    line-height: 1;
+    filter: drop-shadow(0 2px 3px rgba(0,0,0,0.55));
+  }
+
+  .hud-info {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.05;
+  }
+
+  .hud-label {
+    font-size: 0.78rem;
+    color: #ffdca8;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+
+  .hud-val {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #ffffff;
+  }
+
+  /* Stamina & Map Indicator */
+  #hud-subbar {
+    position: absolute;
+    top: 78px;
+    left: 14px;
+    z-index: 19;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    pointer-events: none;
+  }
+
+  .stamina-box {
+    width: 210px;
+    padding: 5px 10px;
+    border-radius: 12px;
+  }
+
+  .stamina-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #ffe399;
+    margin-bottom: 3px;
+  }
+
+  .stamina-track {
+    width: 100%;
+    height: 11px;
+    background: #2b1403;
+    border-radius: 99px;
+    overflow: hidden;
+    border: 1.5px solid #4d270a;
+  }
+
+  #stamina-fill {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, #2ecc71, #f1c40f, #ff9f1a);
+    border-radius: 99px;
+    transition: width 0.08s linear;
+  }
+
+  /* AI State Badge */
+  .ai-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 11px;
+    border-radius: 99px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    background: rgba(35, 18, 4, 0.82);
+    border: 2px solid #754014;
+    color: #ffdf9e;
+    width: fit-content;
+  }
+
+  .ai-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #2ecc71;
+    box-shadow: 0 0 6px currentColor;
+  }
+
+  /* Home Screen Left Menu Overlay (Concept Inspired) */
+  #home-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 20px 4vw;
+    pointer-events: none;
+    background: radial-gradient(circle at 25% 50%, rgba(0,0,0,0.28) 0%, rgba(0,0,0,0.08) 70%);
+    transition: opacity 0.3s ease;
+  }
+
+  .home-menu-col {
+    pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: min(370px, 90vw);
+    gap: 12px;
+  }
+
+  /* Logo Banner */
+  .logo-container {
+    position: relative;
+    text-align: center;
+    margin-bottom: 6px;
+    padding: 12px 16px;
+    filter: drop-shadow(0 8px 14px rgba(0,0,0,0.55));
+    animation: floatLogo 3s ease-in-out infinite;
+  }
+
+  @keyframes floatLogo {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-6px); }
+  }
+
+  .logo-dragon-badge {
+    font-size: 1rem;
+    font-weight: 800;
+    background: linear-gradient(90deg, #d62828, #f77f00);
+    color: #fff;
+    padding: 3px 14px;
+    border-radius: 99px;
+    border: 2px solid #fff3b0;
+    display: inline-block;
+    margin-bottom: -4px;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.35);
+  }
+
+  .logo-title-main {
+    font-size: clamp(2.3rem, 5vw, 3.2rem);
+    font-weight: 800;
+    line-height: 0.98;
+    color: #ffdd3c;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-shadow: 
+      -3px -3px 0 #70160e,
+       3px -3px 0 #70160e,
+      -3px  3px 0 #70160e,
+       3px  3px 0 #70160e,
+       0 6px 0 #4a0c06,
+       0 9px 12px rgba(0,0,0,0.65);
+  }
+
+  .logo-title-sub {
+    font-size: clamp(1.7rem, 4vw, 2.35rem);
+    font-weight: 800;
+    line-height: 1.05;
+    color: #ffffff;
+    background: linear-gradient(180deg, #e62e25 0%, #b0150d 100%);
+    padding: 2px 22px 5px;
+    border-radius: 14px;
+    border: 3px solid #ffba42;
+    display: inline-block;
+    margin-top: 2px;
+    text-shadow: 
+      -2px -2px 0 #1b3b6f,
+       2px -2px 0 #1b3b6f,
+      -2px  2px 0 #1b3b6f,
+       2px  2px 0 #1b3b6f,
+       0 4px 0 #102547;
+  }
+
+  .menu-btn-stack {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 300px;
+    gap: 10px;
+  }
+
+  .menu-btn-stack .gold-btn {
+    width: 100%;
+  }
+
+  .menu-btn-stack .wood-btn {
+    width: 100%;
+    justify-content: flex-start;
+    padding: 10px 22px;
+    font-size: 1.15rem;
+  }
+
+  .map-selector-bar {
+    display: flex;
+    gap: 6px;
+    width: 100%;
+    max-width: 300px;
+    background: rgba(45, 22, 5, 0.85);
+    border: 2px solid #8a4e1d;
+    border-radius: 14px;
+    padding: 5px;
+  }
+
+  .map-chip {
+    flex: 1;
+    text-align: center;
+    padding: 6px 4px;
+    font-size: 0.82rem;
+    font-weight: 800;
+    border-radius: 9px;
+    cursor: pointer;
+    color: #e6c699;
+    background: transparent;
+    border: none;
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+
+  .map-chip.active {
+    background: linear-gradient(180deg, #ffcf40, #e88d00);
+    color: #3d1900;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+  }
+
+  /* Bottom Skill Bar & Mobile Controls */
+  #skills-dock {
+    position: absolute;
+    bottom: 14px;
+    right: 16px;
+    z-index: 22;
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    pointer-events: auto;
+  }
+
+  .skill-slot {
+    position: relative;
+    width: 62px;
+    height: 62px;
+    border-radius: 16px;
+    background: linear-gradient(180deg, #8f4f1c 0%, #592e0b 100%);
+    border: 3px solid #ffcf52;
+    box-shadow: 0 5px 10px rgba(0,0,0,0.5), inset 0 2px 2px rgba(255,255,255,0.3);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    transition: transform 0.1s;
+    overflow: hidden;
+  }
+
+  .skill-slot.primary-sprint {
+    width: 82px;
+    height: 82px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #ffe853 0%, #ffaa00 65%, #d46b00 100%);
+    border: 4px solid #592800;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.55), inset 0 3px 3px rgba(255,255,255,0.75);
+  }
+
+  .skill-slot:active {
+    transform: scale(0.93);
+  }
+
+  .skill-slot.active-skill {
+    border-color: #4cd137;
+    box-shadow: 0 0 14px #4cd137;
+  }
+
+  .skill-emoji {
+    font-size: 1.55rem;
+    line-height: 1;
+    filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));
+  }
+
+  .primary-sprint .skill-emoji {
+    font-size: 2.1rem;
+  }
+
+  .skill-name {
+    font-size: 0.65rem;
+    font-weight: 800;
+    text-shadow: 0 1px 2px #000;
+    margin-top: 2px;
+    white-space: nowrap;
+  }
+
+  .primary-sprint .skill-name {
+    font-size: 0.74rem;
+    background: rgba(50, 22, 0, 0.85);
+    padding: 1px 7px;
+    border-radius: 99px;
+  }
+
+  .skill-key {
+    position: absolute;
+    top: 2px;
+    left: 5px;
+    font-size: 0.62rem;
+    font-weight: 800;
+    color: #ffe399;
+    text-shadow: 0 1px 2px #000;
+  }
+
+  .cd-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 8, 2, 0.76);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #ffd32a;
+    pointer-events: none;
+    opacity: 0;
+  }
+
+  /* Virtual Joystick (Bottom Left for Touch / Mouse Drag) */
+  #joystick-zone {
+    position: absolute;
+    bottom: 18px;
+    left: 20px;
+    width: 126px;
+    height: 126px;
+    z-index: 22;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,235,190,0.18) 0%, rgba(60,30,5,0.45) 100%);
+    border: 3px solid rgba(255, 210, 130, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: none;
+  }
+
+  #joystick-knob {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #ffe270, #d98218);
+    border: 3px solid #4a2102;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    pointer-events: none;
+    transform: translate(0px, 0px);
+  }
+
+  /* Modals */
+  .modal-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: 50;
+    background: rgba(12, 6, 1, 0.72);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+
+  .modal-backdrop.open {
+    display: flex;
+  }
+
+  .modal-card {
+    width: min(560px, 95vw);
+    max-height: 88vh;
+    overflow-y: auto;
+    padding: 22px 24px;
+    border-radius: 22px;
+    border: 4px solid #3a1c04;
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid rgba(255, 215, 150, 0.25);
+    padding-bottom: 10px;
+    margin-bottom: 14px;
+  }
+
+  .modal-title {
+    font-size: 1.65rem;
+    font-weight: 800;
+    color: #ffe066;
+  }
+
+  .close-btn {
+    background: #c0392b;
+    border: 2px solid #5c120b;
+    color: #fff;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    font-weight: 800;
+    font-size: 1.1rem;
+    cursor: pointer;
+  }
+
+  .guide-section {
+    background: rgba(35, 16, 2, 0.45);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    font-size: 0.95rem;
+    line-height: 1.45;
+  }
+
+  .guide-section h4 {
+    color: #ffd15c;
+    margin-bottom: 4px;
+    font-size: 1.05rem;
+  }
+
+  .setting-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    background: rgba(35, 16, 2, 0.45);
+    border-radius: 12px;
+    margin-bottom: 10px;
+  }
+
+  /* Chant & Wave Banner */
+  #chant-banner {
+    position: absolute;
+    top: 22%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.9);
+    z-index: 40;
+    pointer-events: none;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+
+  #chant-banner.visible {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  .chant-box {
+    background: linear-gradient(180deg, rgba(145, 72, 18, 0.95), rgba(82, 38, 6, 0.95));
+    border: 4px solid #ffcf4d;
+    border-radius: 20px;
+    padding: 14px 28px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.65);
+  }
+
+  .chant-title {
+    font-size: clamp(1.3rem, 3.2vw, 2rem);
+    font-weight: 800;
+    color: #ffe159;
+    text-shadow: 0 3px 5px rgba(0,0,0,0.8);
+  }
+
+  .chant-sub {
+    font-size: clamp(0.95rem, 2vw, 1.2rem);
+    color: #fff;
+    margin-top: 4px;
+  }
+
+  table.leaderboard-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 6px;
+  }
+
+  table.leaderboard-table th,
+  table.leaderboard-table td {
+    padding: 8px 10px;
+    text-align: left;
+    border-bottom: 1px solid rgba(255,220,160,0.2);
+    font-size: 0.95rem;
+  }
+
+  table.leaderboard-table th {
+    color: #ffd25a;
+  }
+
+  @media (max-width: 768px) {
+    .hud-badge {
+      padding: 4px 10px;
+      min-width: 92px;
+    }
+    .hud-val {
+      font-size: 1.05rem;
+    }
+    .hud-icon {
+      font-size: 1.3rem;
+    }
+    #hud-subbar {
+      top: 64px;
+    }
+    .stamina-box {
+      width: 165px;
+    }
+    .skill-slot {
+      width: 50px;
+      height: 50px;
+    }
+    .skill-slot.primary-sprint {
+      width: 68px;
+      height: 68px;
+    }
+    #joystick-zone {
+      width: 108px;
+      height: 108px;
+      bottom: 12px;
+      left: 12px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div id="game-wrapper">
+  <canvas id="gameCanvas"></canvas>
+
+  <!-- TOP HUD -->
+  <div id="hud-bar">
+    <div class="hud-group">
+      <div class="wood-panel hud-badge" title="Thời gian còn lại của vòng">
+        <span class="hud-icon">⏱️</span>
+        <div class="hud-info">
+          <span class="hud-label">Thời Gian</span>
+          <span class="hud-val" id="hud-time">01:00</span>
+        </div>
+      </div>
+
+      <div class="wood-panel hud-badge" title="Số thành viên trong đoàn rồng">
+        <span class="hud-icon">🐉</span>
+        <div class="hud-info">
+          <span class="hud-label">Đoàn Rồng</span>
+          <span class="hud-val" id="hud-members">1 + 4</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="hud-group">
+      <div class="wood-panel hud-badge" title="Điểm số hiện tại">
+        <span class="hud-icon">⭐</span>
+        <div class="hud-info">
+          <span class="hud-label">Điểm Số</span>
+          <span class="hud-val" id="hud-score">0</span>
+        </div>
+      </div>
+
+      <div class="wood-panel hud-badge" title="Vòng chơi hiện tại">
+        <span class="hud-icon">🚩</span>
+        <div class="hud-info">
+          <span class="hud-label">Vòng</span>
+          <span class="hud-val" id="hud-round">1/3</span>
+        </div>
+      </div>
+
+      <button class="wood-btn" id="btn-pause-hud" style="padding: 8px 14px; font-size: 1.1rem;" title="Tạm dừng (ESC)">
+        ⏸️
+      </button>
+    </div>
+  </div>
+
+  <!-- SUB HUD: Stamina & AI Status -->
+  <div id="hud-subbar">
+    <div class="wood-panel stamina-box">
+      <div class="stamina-header">
+        <span>⚡ NĂNG LƯỢNG</span>
+        <span id="stamina-text">100%</span>
+      </div>
+      <div class="stamina-track">
+        <div id="stamina-fill"></div>
+      </div>
+    </div>
+    <div class="ai-status-pill" id="ai-status-pill">
+      <span class="ai-dot" id="ai-state-dot"></span>
+      <span id="ai-state-label">Thầy Thuốc: Tuần Tra</span>
+    </div>
+  </div>
+
+  <!-- CENTER CHANT / ROUND BANNER -->
+  <div id="chant-banner">
+    <div class="chant-box">
+      <div class="chant-title" id="chant-title">RỒNG RẮN LÊN MÂY!</div>
+      <div class="chant-sub" id="chant-sub">Có cây lúc lắc, có nhà hiển vinh...</div>
+    </div>
+  </div>
+
+  <!-- HOME MENU OVERLAY (Matching Concept Layout) -->
+  <div id="home-overlay">
+    <div class="home-menu-col">
+      <div class="logo-container">
+        <div class="logo-dragon-badge">🐉 TRÒ CHƠI DÂN GIAN</div>
+        <div class="logo-title-main">Rồng Rắn</div>
+        <div class="logo-title-sub">Lên Mây</div>
+      </div>
+
+      <div class="map-selector-bar" role="group" aria-label="Chọn bản đồ">
+        <button class="map-chip active" data-map="0" id="map-btn-0">🏡 Làng Quê</button>
+        <button class="map-chip" data-map="1" id="map-btn-1">🎋 Rừng Tre</button>
+        <button class="map-chip" data-map="2" id="map-btn-2">🏮 Hội Làng</button>
+      </div>
+
+      <div class="menu-btn-stack">
+        <button class="gold-btn" id="btn-start-game">
+          <span>▶</span> <span>Bắt Đầu</span>
+        </button>
+        <button class="wood-btn" id="btn-open-guide">
+          <span>📖</span> <span>Hướng Dẫn</span>
+        </button>
+        <button class="wood-btn" id="btn-open-settings">
+          <span>⚙️</span> <span>Cài Đặt</span>
+        </button>
+        <button class="wood-btn" id="btn-open-leaderboard">
+          <span>🏆</span> <span>Bảng Xếp Hạng</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIRTUAL JOYSTICK -->
+  <div id="joystick-zone" title="Kéo để điều khiển hướng Đầu Rồng">
+    <div id="joystick-knob"></div>
+  </div>
+
+  <!-- SKILLS DOCK (Bottom Right) -->
+  <div id="skills-dock">
+    <button class="skill-slot" id="skill-btn-dash" title="Đổi Hướng Nhanh / Lướt (Phím 1 hoặc Space)">
+      <span class="skill-key">1/Space</span>
+      <span class="skill-emoji">💨</span>
+      <span class="skill-name">Đổi Hướng</span>
+      <div class="cd-overlay" id="cd-dash"></div>
+    </button>
+
+    <button class="skill-slot" id="skill-btn-decoy" title="Đánh Lạc Hướng - Tạo hình nộm thu hút Thầy Thuốc (Phím 2 / Q)">
+      <span class="skill-key">2/Q</span>
+      <span class="skill-emoji">🪆</span>
+      <span class="skill-name">Lạc Hướng</span>
+      <div class="cd-overlay" id="cd-decoy"></div>
+    </button>
+
+    <button class="skill-slot" id="skill-btn-shield" title="Khiên Bảo Vệ đuôi rồng (Phím 3 / E)">
+      <span class="skill-key">3/E</span>
+      <span class="skill-emoji">🛡️</span>
+      <span class="skill-name">Khiên Bảo Vệ</span>
+      <div class="cd-overlay" id="cd-shield"></div>
+    </button>
+
+    <button class="skill-slot" id="skill-btn-stamina" title="Tăng Sức Bền - Hồi đầy năng lượng & không hao sức bền (Phím 4 / R)">
+      <span class="skill-key">4/R</span>
+      <span class="skill-emoji">🌾</span>
+      <span class="skill-name">Sức Bền</span>
+      <div class="cd-overlay" id="cd-stamina"></div>
+    </button>
+
+    <button class="skill-slot primary-sprint" id="skill-btn-sprint" title="Giữ Shift hoặc nhấn giữ để Chạy Nhanh">
+      <span class="skill-key">Shift</span>
+      <span class="skill-emoji">🏃</span>
+      <span class="skill-name">Chạy Nhanh</span>
+    </button>
+  </div>
+
+  <!-- GUIDE MODAL -->
+  <div class="modal-backdrop" id="modal-guide">
+    <div class="wood-panel modal-card">
+      <div class="modal-header">
+        <div class="modal-title">📖 Hướng Dẫn Chơi</div>
+        <button class="close-btn" data-close="modal-guide">✕</button>
+      </div>
+      <div class="guide-section">
+        <h4>🐉 Luật Chơi Rồng Rắn Lên Mây</h4>
+        <p>Bạn điều khiển <b>Đầu Rồng</b> dẫn đoàn trẻ em chạy quanh sân làng. <b>Thầy Thuốc (AI)</b> sẽ tìm mọi cách vòng ra phía sau để bắt <b>thành viên cuối cùng (Khúc Đuôi)</b>!</p>
+        <p style="margin-top:6px;">• Dùng thân đầu rồng che chắn hoặc uốn lượn quanh gốc cây, bụi tre, chum nước để cản đường Thầy Thuốc.<br>
+        • Khi thành viên cuối bị bắt, bé đó sẽ rời đoàn và trò chơi tiếp tục nếu vẫn còn người.<br>
+        • Trò chơi kết thúc khi hết toàn bộ thành viên hoặc Đầu Rồng bị tóm trực diện!</p>
+      </div>
+      <div class="guide-section">
+        <h4>🎮 Điều Khiển</h4>
+        <p>• <b>Máy tính:</b> Phím <b>WASD</b> hoặc <b>Mũi tên</b> để di chuyển. Giữ <b>Shift</b> để Chạy Nhanh. Nhấn <b>Space / 1, 2, 3, 4 (hoặc Q, E, R)</b> để dùng kỹ năng. <b>ESC</b> để tạm dừng.<br>
+        • <b>Điện thoại / Chuột:</b> Kéo <b>Joystick ảo</b> góc trái dưới và nhấn các nút Kỹ năng góc phải dưới.</p>
+      </div>
+      <div class="guide-section">
+        <h4>✨ Hệ Thống 5 Kỹ Năng & Vật Phẩm</h4>
+        <p>• <b>🏃 Chạy Nhanh (Shift):</b> Tăng tốc độ di chuyển (tiêu hao Năng Lượng).<br>
+        • <b>💨 Đổi Hướng Nhanh (1/Space):</b> Bứt tốc ngoặt gấp thoát vây.<br>
+        • <b>🪆 Đánh Lạc Hướng (2/Q):</b> Thả hình nộm rơm thu hút Thầy Thuốc đuổi theo.<br>
+        • <b>🛡️ Khiên Bảo Vệ (3/E):</b> Tạo vòng kim cang bảo vệ cả đoàn trong 4 giây.<br>
+        • <b>🌾 Tăng Sức Bền (4/R):</b> Hồi ngay 65% Năng Lượng và miễn giảm tiêu hao trong 5 giây.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS MODAL -->
+  <div class="modal-backdrop" id="modal-settings">
+    <div class="wood-panel modal-card">
+      <div class="modal-header">
+        <div class="modal-title">⚙️ Cài Đặt</div>
+        <button class="close-btn" data-close="modal-settings">✕</button>
+      </div>
+      <div class="setting-row">
+        <span>🔊 Âm thanh & Nhạc dân gian (Web Audio)</span>
+        <button class="wood-btn" id="toggle-sound-btn" style="padding:6px 16px; font-size:1rem;">BẬT</button>
+      </div>
+      <div class="setting-row">
+        <span>📳 Hiệu ứng rung màn hình</span>
+        <button class="wood-btn" id="toggle-shake-btn" style="padding:6px 16px; font-size:1rem;">BẬT</button>
+      </div>
+      <div class="setting-row">
+        <span>🗺️ Bản đồ khởi đầu</span>
+        <select id="setting-map-select" style="background:#3d1f05; color:#fff; border:2px solid #b86b28; padding:6px 12px; border-radius:8px; font-family:inherit; font-weight:700;">
+          <option value="0">🏡 Vòng 1: Sân Làng Quê</option>
+          <option value="1">🎋 Vòng 2: Rừng Tre Xanh</option>
+          <option value="2">🏮 Vòng 3: Đêm Hội Làng</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <span>⚡ Độ khó AI Thầy Thuốc</span>
+        <select id="setting-diff-select" style="background:#3d1f05; color:#fff; border:2px solid #b86b28; padding:6px 12px; border-radius:8px; font-family:inherit; font-weight:700;">
+          <option value="0.88">Thư giãn (Dễ)</option>
+          <option value="1" selected>Chuẩn Dân Gian (Vừa)</option>
+          <option value="1.16">Cao Thủ (Khó)</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEADERBOARD MODAL -->
+  <div class="modal-backdrop" id="modal-leaderboard">
+    <div class="wood-panel modal-card">
+      <div class="modal-header">
+        <div class="modal-title">🏆 Bảng Thành Tích</div>
+        <button class="close-btn" data-close="modal-leaderboard">✕</button>
+      </div>
+      <div id="leaderboard-content"></div>
+      <div style="margin-top: 14px; display:flex; justify-content:flex-end;">
+        <button class="wood-btn" id="btn-clear-scores" style="font-size:0.9rem; padding:6px 14px;">🗑️ Xóa Kỷ Lục</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAUSE MODAL -->
+  <div class="modal-backdrop" id="modal-pause">
+    <div class="wood-panel modal-card" style="text-align:center; max-width:400px;">
+      <div class="modal-title" style="margin-bottom:14px;">⏸️ Đang Tạm Dừng</div>
+      <p style="margin-bottom:18px; color:#ffdf9e;">Đoàn rồng đang nghỉ chân giữa sân đình!</p>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <button class="gold-btn" id="btn-resume-game" style="font-size:1.3rem;">▶ Tiếp Tục Chơi</button>
+        <button class="wood-btn" id="btn-restart-pause">🔄 Chơi Lại Vòng 1</button>
+        <button class="wood-btn" id="btn-home-pause">🏠 Về Trang Chủ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- END GAME / ROUND SUMMARY MODAL -->
+  <div class="modal-backdrop" id="modal-gameover">
+    <div class="wood-panel modal-card" style="text-align:center; max-width:460px;">
+      <div class="modal-title" id="end-title" style="font-size:2rem; margin-bottom:6px;">🎉 CHIẾN THẮNG!</div>
+      <p id="end-subtitle" style="color:#ffdca8; margin-bottom:14px; font-weight:700;">Bạn đã bảo vệ đoàn rồng xuất sắc!</p>
+
+      <div class="guide-section" style="text-align:left; font-size:1rem;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+          <span>⭐ Tổng điểm đạt được:</span>
+          <strong id="end-score" style="color:#ffe159; font-size:1.2rem;">0</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+          <span>👧 Thành viên còn lại:</span>
+          <strong id="end-survivors">4</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+          <span>🚩 Vòng đạt tới:</span>
+          <strong id="end-round">3/3</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between;">
+          <span>🏅 Danh hiệu:</span>
+          <strong id="end-rank" style="color:#7bed9f;">Đầu Rồng Tài Ba</strong>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:10px; justify-content:center; margin-top:16px; flex-wrap:wrap;">
+        <button class="gold-btn" id="btn-play-again" style="font-size:1.25rem; padding:10px 24px;">🔄 Chơi Lại</button>
+        <button class="wood-btn" id="btn-end-home">🏠 Trang Chủ</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  // ==========================================
+  // 1. AUDIO SYNTHESIZER (Web Audio API)
+  // ==========================================
+  class SoundEngine {
+    constructor() {
+      this.ctx = null;
+      this.enabled = true;
+    }
+    init() {
+      if (!this.ctx) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) this.ctx = new AudioCtx();
+      }
+      if (this.ctx && this.ctx.state === 'suspended') {
+        this.ctx.resume();
+      }
+    }
+    tone(freq, type, duration, vol = 0.12, slideFreq = null) {
+      if (!this.enabled) return;
+      try {
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, now);
+        if (slideFreq) {
+          osc.frequency.exponentialRampToValueAtTime(slideFreq, now + duration);
+        }
+        gain.gain.setValueAtTime(vol, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + duration);
+      } catch (e) {}
+    }
+    playClick() {
+      this.tone(520, 'triangle', 0.08, 0.12, 740);
+    }
+    playDash() {
+      this.tone(280, 'sine', 0.22, 0.16, 680);
+    }
+    playShield() {
+      this.tone(440, 'triangle', 0.15, 0.14, 880);
+      setTimeout(() => this.tone(660, 'sine', 0.25, 0.14, 990), 90);
+    }
+    playDecoy() {
+      this.tone(360, 'square', 0.12, 0.1, 520);
+      setTimeout(() => this.tone(540, 'triangle', 0.16, 0.1, 400), 80);
+    }
+    playStamina() {
+      [440, 554, 659, 880].forEach((f, i) => {
+        setTimeout(() => this.tone(f, 'triangle', 0.14, 0.12), i * 55);
+      });
+    }
+    playCaptured() {
+      this.tone(420, 'sawtooth', 0.18, 0.16, 180);
+      setTimeout(() => this.tone(240, 'sawtooth', 0.25, 0.16, 110), 120);
+    }
+    playBlockSuccess() {
+      this.tone(587, 'triangle', 0.12, 0.15, 880);
+    }
+    playRoundFanfare() {
+      // Pentatonic Vietnamese folk feel (C - D - F - G - A - C)
+      const notes = [523.25, 587.33, 698.46, 783.99, 880.00, 1046.50];
+      notes.forEach((n, idx) => {
+        setTimeout(() => this.tone(n, 'triangle', 0.16, 0.13), idx * 80);
+      });
+    }
+    playPickup() {
+      this.tone(659, 'sine', 0.1, 0.14, 987);
+      setTimeout(() => this.tone(987, 'sine', 0.15, 0.14, 1318), 75);
+    }
+  }
+
+  const sfx = new SoundEngine();
+
+  // ==========================================
+  // 2. GAME CONSTANTS & MAP DEFINITIONS
+  // ==========================================
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+
+  const WORLD = {
+    w: 1600,
+    h: 1000,
+    pad: 85
+  };
+
+  const CHILD_PALETTES = [
+    { name: 'Bé Hồng', shirt: '#ff6b9d', trim: '#ffd166', hair: '#2c1810', style: 'bun_flower', pants: '#3d348b' },
+    { name: 'Cu Tí', shirt: '#2e86de', trim: '#54a0ff', hair: '#24160e', style: 'short', pants: '#222f3e' },
+    { name: 'Bé Mai', shirt: '#ffbe0b', trim: '#fb5607', hair: '#2b1911', style: 'headband', pants: '#5f27cd' },
+    { name: 'Cu Bờm', shirt: '#2ecc71', trim: '#a3cb38', hair: '#1e130c', style: 'tuft', pants: '#1e272e' },
+    { name: 'Bé Sen', shirt: '#9b59b6', trim: '#f368e0', hair: '#2c1810', style: 'pigtails', pants: '#341f97' },
+    { name: 'Cu Đậu', shirt: '#ff7f50', trim: '#ffeaa7', hair: '#22140b', style: 'short', pants: '#2d3436' },
+    { name: 'Bé Trúc', shirt: '#00cec9', trim: '#81ecec', hair: '#2c1810', style: 'bun_flower', pants: '#0984e3' },
+    { name: 'Cu Khoai', shirt: '#e84393', trim: '#fd79a8', hair: '#22140b', style: 'tuft', pants: '#2d3436' }
+  ];
+
+  const MAPS = [
+    {
+      id: 0,
+      name: 'Sân Làng Quê',
+      chant: 'Rồng rắn lên mây - Có cây lúc lắc!',
+      groundTop: '#f5c76b',
+      groundBot: '#df9e42',
+      grassColor: '#4ca629',
+      waterPos: { x: 880, y: 35, w: 560, h: 110 },
+      obstacles: [
+        { x: 470, y: 340, r: 44, type: 'haystack', label: 'Đống Rơm' },
+        { x: 1120, y: 330, r: 46, type: 'well', label: 'Giếng Làng' },
+        { x: 790, y: 540, r: 38, type: 'rock', label: 'Đá Cuội' },
+        { x: 460, y: 710, r: 40, type: 'jar', label: 'Lu Nước' },
+        { x: 1140, y: 690, r: 45, type: 'haystack', label: 'Đống Rơm' }
+      ]
+    },
+    {
+      id: 1,
+      name: 'Rừng Tre Xanh',
+      chant: 'Hỏi thăm thầy thuốc - Có nhà hay không?',
+      groundTop: '#dfbe6f',
+      groundBot: '#bd9242',
+      grassColor: '#378f29',
+      waterPos: { x: 680, y: 30, w: 620, h: 115 },
+      obstacles: [
+        { x: 420, y: 320, r: 48, type: 'bamboo_clump', label: 'Khóm Tre' },
+        { x: 800, y: 300, r: 42, type: 'rock', label: 'Tảng Đá' },
+        { x: 1180, y: 330, r: 48, type: 'bamboo_clump', label: 'Khóm Tre' },
+        { x: 610, y: 560, r: 46, type: 'bamboo_clump', label: 'Khóm Tre' },
+        { x: 990, y: 560, r: 46, type: 'bamboo_clump', label: 'Khóm Tre' },
+        { x: 430, y: 740, r: 38, type: 'jar', label: 'Chum Sành' },
+        { x: 1170, y: 740, r: 42, type: 'rock', label: 'Đá Rêu' }
+      ]
+    },
+    {
+      id: 2,
+      name: 'Đêm Hội Làng',
+      chant: 'Thầy thuốc đi vắng - Mở hội múa rồng!',
+      groundTop: '#f3bc5e',
+      groundBot: '#cf8430',
+      grassColor: '#3f9127',
+      waterPos: { x: 850, y: 30, w: 580, h: 110 },
+      obstacles: [
+        { x: 480, y: 310, r: 46, type: 'drum', label: 'Trống Hội' },
+        { x: 1120, y: 310, r: 46, type: 'drum', label: 'Trống Hội' },
+        { x: 800, y: 490, r: 52, type: 'lantern_pillar', label: 'Cột Đèn Lồng' },
+        { x: 450, y: 690, r: 42, type: 'jar', label: 'Chum Rượu' },
+        { x: 800, y: 760, r: 40, type: 'haystack', label: 'Đống Rơm' },
+        { x: 1150, y: 690, r: 42, type: 'jar', label: 'Chum Rượu' }
+      ]
+    }
+  ];
+
+  const ROUNDS = [
+    { round: 1, childrenCount: 4, duration: 45, aiSpeedMult: 1.0, mapIndex: 0 },
+    { round: 2, childrenCount: 6, duration: 55, aiSpeedMult: 1.08, mapIndex: 1 },
+    { round: 3, childrenCount: 8, duration: 65, aiSpeedMult: 1.15, mapIndex: 2 }
+  ];
+
+  // ==========================================
+  // 3. GAME STATE & ENTITIES
+  // ==========================================
+  const state = {
+    mode: 'MENU', // 'MENU', 'PLAYING', 'PAUSED', 'GAMEOVER'
+    selectedMap: 0,
+    difficultyMult: 1.0,
+    shakeEnabled: true,
+    roundIndex: 0,
+    timeLeft: 45,
+    score: 0,
+    ComboBlocks: 0,
+    screenShake: 0,
+    redFlash: 0,
+    goldFlash: 0,
+    animTime: 0,
+
+    // Player & Dragon Chain
+    head: {
+      x: 520,
+      y: 520,
+      vx: 1,
+      vy: 0,
+      angle: 0,
+      speed: 255,
+      baseSpeed: 255,
+      radius: 26,
+      stamina: 100,
+      maxStamina: 100,
+      sprinting: false,
+      dashTime: 0,
+      shieldTime: 0,
+      infiniteStaminaTime: 0,
+      expression: 'happy' // 'happy', 'effort', 'shock'
+    },
+    pathHistory: [], // Array of {x, y, angle} sampled every few pixels
+    segmentSpacing: 46,
+    children: [], // Array of child objects
+
+    // Skills Cooldowns
+    skills: {
+      dash: { cd: 0, maxCd: 4.0, cost: 18 },
+      decoy: { cd: 0, maxCd: 9.0, cost: 22 },
+      shield: { cd: 0, maxCd: 12.0, cost: 28 },
+      stamina: { cd: 0, maxCd: 15.0, cost: 0 }
+    },
+
+    // Active Decoy
+    decoy: null, // {x, y, timer, maxTimer, radius}
+
+    // Collectibles on field
+    pickups: [], // {x, y, r, type: 'star' | 'tea' | 'drum', bob}
+
+    // AI Doctor (Thầy Thuốc)
+    doctor: {
+      x: 1050,
+      y: 260,
+      vx: 0,
+      vy: 0,
+      angle: 0,
+      speed: 235,
+      radius: 26,
+      aiState: 'PATROL', // 'PATROL', 'SEARCH', 'CHASE', 'PREDICT', 'ATTACK', 'RECOVER'
+      stateTimer: 0,
+      patrolTarget: { x: 900, y: 300 },
+      lungeDir: { x: 0, y: 0 },
+      flankSign: 1,
+      flankSwitchTimer: 0,
+      expression: 'determined'
+    },
+
+    // Visual effects
+    particles: [],
+    floatingTexts: [],
+    sceneryProps: []
+  };
+
+  // Pre-generate static decorative grass tufts & flowers
+  function initSceneryProps() {
+    state.sceneryProps = [];
+    for (let i = 0; i < 42; i++) {
+      state.sceneryProps.push({
+        x: 110 + ((i * 263) % (WORLD.w - 220)),
+        y: 155 + ((i * 179) % (WORLD.h - 260)),
+        type: i % 4 === 0 ? 'pebble' : 'grass',
+        scale: 0.75 + (i % 5) * 0.12
+      });
+    }
+  }
+  initSceneryProps();
+
+  // ==========================================
+  // 4. INPUT HANDLING (Keyboard + Virtual Joystick)
+  // ==========================================
+  const keys = {};
+  const joystick = {
+    active: false,
+    dx: 0,
+    dy: 0,
+    originX: 0,
+    originY: 0,
+    pointerId: null
+  };
+
+  window.addEventListener('keydown', (e) => {
+    keys[e.code] = true;
+    if (e.code === 'Escape') {
+      if (state.mode === 'PLAYING') togglePause(true);
+      else if (state.mode === 'PAUSED') togglePause(false);
+    }
+    if (state.mode === 'PLAYING') {
+      if (e.code === 'Space' || e.code === 'Digit1') {
+        e.preventDefault();
+        triggerSkill('dash');
+      } else if (e.code === 'Digit2' || e.code === 'KeyQ') {
+        triggerSkill('decoy');
+      } else if (e.code === 'Digit3' || e.code === 'KeyE') {
+        triggerSkill('shield');
+      } else if (e.code === 'Digit4' || e.code === 'KeyR') {
+        triggerSkill('stamina');
+      }
+    }
+  });
+
+  window.addEventListener('keyup', (e) => {
+    keys[e.code] = false;
+  });
+
+  // Virtual Joystick Setup
+  const joyZone = document.getElementById('joystick-zone');
+  const joyKnob = document.getElementById('joystick-knob');
+
+  function handleJoystickMove(clientX, clientY) {
+    const rect = joyZone.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    let dx = clientX - cx;
+    let dy = clientY - cy;
+    const maxR = rect.width * 0.38;
+    const dist = Math.hypot(dx, dy);
+    if (dist > maxR) {
+      dx = (dx / dist) * maxR;
+      dy = (dy / dist) * maxR;
+    }
+    joyKnob.style.transform = `translate(${dx.toFixed(1)}px, ${dy.toFixed(1)}px)`;
+    if (dist > 6) {
+      joystick.dx = dx / maxR;
+      joystick.dy = dy / maxR;
+    } else {
+      joystick.dx = 0;
+      joystick.dy = 0;
+    }
+  }
+
+  function resetJoystick() {
+    joystick.active = false;
+    joystick.pointerId = null;
+    joystick.dx = 0;
+    joystick.dy = 0;
+    joyKnob.style.transform = 'translate(0px, 0px)';
+  }
+
+  joyZone.addEventListener('pointerdown', (e) => {
+    sfx.init();
+    joystick.active = true;
+    joystick.pointerId = e.pointerId;
+    joyZone.setPointerCapture(e.pointerId);
+    handleJoystickMove(e.clientX, e.clientY);
+  });
+
+  joyZone.addEventListener('pointermove', (e) => {
+    if (!joystick.active || e.pointerId !== joystick.pointerId) return;
+    handleJoystickMove(e.clientX, e.clientY);
+  });
+
+  joyZone.addEventListener('pointerup', resetJoystick);
+  joyZone.addEventListener('pointercancel', resetJoystick);
+
+  // Sprint hold button
+  const btnSprint = document.getElementById('skill-btn-sprint');
+  let sprintButtonHeld = false;
+  btnSprint.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    sfx.init();
+    sprintButtonHeld = true;
+  });
+  window.addEventListener('pointerup', () => {
+    sprintButtonHeld = false;
+  });
+
+  // ==========================================
+  // 5. DRAGON CHAIN & ROUND INITIALIZATION
+  // ==========================================
+  function createDragonChain(childCount) {
+    const head = state.head;
+    head.x = 500;
+    head.y = 540;
+    head.vx = 1;
+    head.vy = 0;
+    head.angle = 0;
+    head.stamina = head.maxStamina;
+    head.dashTime = 0;
+    head.shieldTime = 2.0; // Brief spawn protection
+    head.infiniteStaminaTime = 0;
+    head.expression = 'happy';
+
+    // Populate smooth history path trailing behind the head
+    state.pathHistory = [];
+    const totalPointsNeeded = (childCount + 4) * state.segmentSpacing;
+    for (let d = 0; d <= totalPointsNeeded; d += 2) {
+      state.pathHistory.push({
+        x: head.x - d,
+        y: head.y + Math.sin(d * 0.05) * 6,
+        angle: 0
+      });
+    }
+
+    state.children = [];
+    for (let i = 0; i < childCount; i++) {
+      const palette = CHILD_PALETTES[i % CHILD_PALETTES.length];
+      const distBehind = (i + 1) * state.segmentSpacing;
+      state.children.push({
+        index: i,
+        x: head.x - distBehind,
+        y: head.y,
+        angle: 0,
+        radius: 21,
+        palette,
+        bobPhase: i * 0.85,
+        scared: 0
+      });
+    }
+  }
+
+  function resetDoctor() {
+    const doc = state.doctor;
+    doc.x = 1120;
+    doc.y = 250;
+    doc.vx = -1;
+    doc.vy = 0;
+    doc.angle = Math.PI;
+    doc.aiState = 'PATROL';
+    doc.stateTimer = 1.1; // Gives player 1.1s at round start before chasing
+    doc.patrolTarget = { x: 960, y: 360 };
+    doc.flankSign = Math.random() < 0.5 ? 1 : -1;
+    doc.flankSwitchTimer = 3.5;
+  }
+
+  function spawnPickups() {
+    state.pickups = [];
+    const curMap = getCurrentMap();
+    const types = ['star', 'tea', 'star'];
+    types.forEach((t, idx) => {
+      const pos = findFreeSpot(curMap, 180);
+      state.pickups.push({
+        x: pos.x,
+        y: pos.y,
+        r: 18,
+        type: t,
+        bob: idx * 1.4
+      });
+    });
+  }
+
+  function findFreeSpot(mapObj, margin = 150) {
+    for (let attempt = 0; attempt < 30; attempt++) {
+      const x = margin + Math.random() * (WORLD.w - margin * 2);
+      const y = margin + 40 + Math.random() * (WORLD.h - margin * 2 - 40);
+      let ok = true;
+      for (const ob of mapObj.obstacles) {
+        if (Math.hypot(x - ob.x, y - ob.y) < ob.r + 55) {
+          ok = false;
+          break;
+        }
+      }
+      if (ok) return { x, y };
+    }
+    return { x: WORLD.w / 2, y: WORLD.h / 2 };
+  }
+
+  function getCurrentMap() {
+    const mapIdx = (state.selectedMap + state.roundIndex) % MAPS.length;
+    return MAPS[mapIdx];
+  }
+
+  function showChantBanner(title, sub, duration = 2600) {
+    const banner = document.getElementById('chant-banner');
+    document.getElementById('chant-title').textContent = title;
+    document.getElementById('chant-sub').textContent = sub;
+    banner.classList.add('visible');
+    if (banner._timer) clearTimeout(banner._timer);
+    banner._timer = setTimeout(() => {
+      banner.classList.remove('visible');
+    }, duration);
+  }
+
+  function startRound(roundIdx) {
+    state.roundIndex = roundIdx;
+    const cfg = ROUNDS[roundIdx];
+    state.timeLeft = cfg.duration;
+    state.decoy = null;
+    state.particles = [];
+    state.floatingTexts = [];
+
+    createDragonChain(cfg.childrenCount);
+    resetDoctor();
+    spawnPickups();
+
+    const mapObj = getCurrentMap();
+    sfx.playRoundFanfare();
+    showChantBanner(
+      `VÒNG ${cfg.round}/3: ${mapObj.name.toUpperCase()}`,
+      `🐉 "${mapObj.chant}" (${cfg.childrenCount} em nhỏ nối đuôi)`
+    );
+    updateHUD();
+  }
+
+  function startNewGame() {
+    sfx.init();
+    sfx.playClick();
+    state.score = 0;
+    state.ComboBlocks = 0;
+    Object.values(state.skills).forEach(s => { s.cd = 0; });
+    document.getElementById('home-overlay').style.display = 'none';
+    closeAllModals();
+    state.mode = 'PLAYING';
+    startRound(0);
+  }
+
+  function returnToHome() {
+    sfx.playClick();
+    closeAllModals();
+    state.mode = 'MENU';
+    document.getElementById('home-overlay').style.display = 'flex';
+    createDragonChain(4);
+    resetDoctor();
+    updateHUD();
+  }
+
+  // ==========================================
+  // 6. SKILLS SYSTEM
+  // ==========================================
+  function triggerSkill(skillKey) {
+    if (state.mode !== 'PLAYING') return;
+    const sk = state.skills[skillKey];
+    const head = state.head;
+    if (!sk || sk.cd > 0) return;
+
+    const freeStamina = head.infiniteStaminaTime > 0;
+    if (!freeStamina && head.stamina < sk.cost) {
+      addFloatingText(head.x, head.y - 36, 'Thiếu năng lượng!', '#ff6b6b');
+      return;
+    }
+
+    if (!freeStamina) head.stamina = Math.max(0, head.stamina - sk.cost);
+    sk.cd = sk.maxCd;
+
+    if (skillKey === 'dash') {
+      head.dashTime = 0.42;
+      sfx.playDash();
+      spawnBurst(head.x, head.y, '#ffeaa7', 16, 160);
+      addFloatingText(head.x, head.y - 35, '💨 LƯỚT NHANH!', '#ffe159');
+    } else if (skillKey === 'decoy') {
+      const tail = state.children.length > 0 ? state.children[state.children.length - 1] : head;
+      state.decoy = {
+        x: tail.x,
+        y: tail.y,
+        timer: 4.5,
+        maxTimer: 4.5,
+        radius: 24
+      };
+      sfx.playDecoy();
+      spawnBurst(tail.x, tail.y, '#ff9f43', 18, 130);
+      addFloatingText(tail.x, tail.y - 35, '🪆 HÌNH NỘM LẠC HƯỚNG!', '#ffbe76');
+    } else if (skillKey === 'shield') {
+      head.shieldTime = 4.2;
+      sfx.playShield();
+      spawnBurst(head.x, head.y, '#7ed6df', 20, 150);
+      addFloatingText(head.x, head.y - 38, '🛡️ KHIÊN BẢO VỆ ĐOÀN!', '#7ed6df');
+    } else if (skillKey === 'stamina') {
+      head.stamina = Math.min(head.maxStamina, head.stamina + 65);
+      head.infiniteStaminaTime = 5.0;
+      sfx.playStamina();
+      spawnBurst(head.x, head.y, '#2ecc71', 18, 140);
+      addFloatingText(head.x, head.y - 38, '🌾 TĂNG SỨC BỀN!', '#7bed9f');
+    }
+  }
+
+  // ==========================================
+  // 7. MOVEMENT HISTORY & SMOOTH CHAIN PHYSICS
+  // ==========================================
+  function recordHeadPath(head) {
+    const history = state.pathHistory;
+    if (history.length === 0) {
+      history.unshift({ x: head.x, y: head.y, angle: head.angle });
+      return;
+    }
+    const first = history[0];
+    const dist = Math.hypot(head.x - first.x, head.y - first.y);
+    if (dist >= 1.5) {
+      // Sub-step interpolation for ultra-smooth path sampling without jitter
+      const steps = Math.min(12, Math.ceil(dist / 2.5));
+      for (let s = 1; s <= steps; s++) {
+        const t = s / steps;
+        history.unshift({
+          x: first.x + (head.x - first.x) * t,
+          y: first.y + (head.y - first.y) * t,
+          angle: head.angle
+        });
+      }
+      // Cap path history length
+      const maxLen = (state.children.length + 5) * state.segmentSpacing;
+      let acc = 0;
+      for (let i = 0; i < history.length - 1; i++) {
+        acc += Math.hypot(history[i].x - history[i + 1].x, history[i].y - history[i + 1].y);
+        if (acc > maxLen) {
+          history.length = i + 2;
+          break;
+        }
+      }
+    }
+  }
+
+  function updateChildrenAlongPath(dt, mapObj) {
+    const history = state.pathHistory;
+    if (history.length < 2) return;
+
+    let pathIdx = 0;
+    let accumDist = 0;
+
+    for (let i = 0; i < state.children.length; i++) {
+      const child = state.children[i];
+      const targetArcDist = (i + 1) * state.segmentSpacing;
+
+      while (pathIdx < history.length - 1) {
+        const p0 = history[pathIdx];
+        const p1 = history[pathIdx + 1];
+        const segLen = Math.hypot(p1.x - p0.x, p1.y - p0.y);
+        if (accumDist + segLen >= targetArcDist) {
+          const remain = targetArcDist - accumDist;
+          const ratio = segLen > 0.0001 ? remain / segLen : 0;
+          const tx = p0.x + (p1.x - p0.x) * ratio;
+          const ty = p0.y + (p1.y - p0.y) * ratio;
+
+          // Smooth exponential damping to eliminate micro-jitter
+          const smooth = 1 - Math.exp(-26 * dt);
+          child.x += (tx - child.x) * smooth;
+          child.y += (ty - child.y) * smooth;
+
+          const leader = i === 0 ? state.head : state.children[i - 1];
+          child.angle = Math.atan2(leader.y - child.y, leader.x - child.x);
+          break;
+        }
+        accumDist += segLen;
+        pathIdx++;
+      }
+
+      // Ensure exact distance constraint to leader & no obstacle penetration
+      const leader = i === 0 ? state.head : state.children[i - 1];
+      const dx = child.x - leader.x;
+      const dy = child.y - leader.y;
+      const d = Math.hypot(dx, dy);
+      if (d > 0.001 && Math.abs(d - state.segmentSpacing) > 2.5) {
+        const pull = (d - state.segmentSpacing) * 0.45;
+        child.x -= (dx / d) * pull;
+        child.y -= (dy / d) * pull;
+      }
+
+      // Resolve obstacles for child
+      resolveEntityObstacles(child, mapObj);
+
+      // Non-overlapping between non-adjacent segments
+      for (let j = 0; j < i - 1; j++) {
+        const other = state.children[j];
+        const ox = child.x - other.x;
+        const oy = child.y - other.y;
+        const od = Math.hypot(ox, oy);
+        const minSep = child.radius + other.radius - 4;
+        if (od > 0.01 && od < minSep) {
+          const push = (minSep - od) * 0.5;
+          child.x += (ox / od) * push;
+          child.y += (oy / od) * push;
+        }
+      }
+
+      child.bobPhase += dt * (state.head.sprinting ? 14 : 9.5);
+      if (child.scared > 0) child.scared = Math.max(0, child.scared - dt);
+    }
+  }
+
+  function resolveEntityObstacles(ent, mapObj) {
+    // World Bounds
+    const minX = WORLD.pad + ent.radius;
+    const maxX = WORLD.w - WORLD.pad - ent.radius;
+    const minY = WORLD.pad + 60 + ent.radius;
+    const maxY = WORLD.h - WORLD.pad - ent.radius;
+
+    if (ent.x < minX) ent.x = minX;
+    if (ent.x > maxX) ent.x = maxX;
+    if (ent.y < minY) ent.y = minY;
+    if (ent.y > maxY) ent.y = maxY;
+
+    // Circular Obstacles
+    for (const ob of mapObj.obstacles) {
+      const dx = ent.x - ob.x;
+      const dy = ent.y - ob.y;
+      const dist = Math.hypot(dx, dy);
+      const minDist = ent.radius + ob.r;
+      if (dist < minDist && dist > 0.001) {
+        const overlap = minDist - dist;
+        ent.x += (dx / dist) * overlap;
+        ent.y += (dy / dist) * overlap;
+      }
+    }
+  }
+
+  // ==========================================
+  // 8. AI THẦY THUỐC STATE MACHINE
+  // (Patrol, Search, Chase, Predict, Attack, Recover)
+  // ==========================================
+  function updateDoctorAI(dt, mapObj, isDemoMode = false) {
+    const doc = state.doctor;
+    const head = state.head;
+    const tail = state.children.length > 0
+      ? state.children[state.children.length - 1]
+      : head;
+
+    // Determine primary target (Decoy if active, otherwise Tail)
+    const target = (state.decoy && state.decoy.timer > 0) ? state.decoy : tail;
+    const distToTarget = Math.hypot(target.x - doc.x, target.y - doc.y);
+    const distToHead = Math.hypot(head.x - doc.x, head.y - doc.y);
+
+    doc.flankSwitchTimer -= dt;
+    if (doc.flankSwitchTimer <= 0) {
+      doc.flankSign = -doc.flankSign;
+      doc.flankSwitchTimer = 2.6 + Math.random() * 2.0;
+    }
+
+    const roundMult = ROUNDS[state.roundIndex] ? ROUNDS[state.roundIndex].aiSpeedMult : 1.0;
+    const baseDocSpeed = 232 * roundMult * (isDemoMode ? 0.88 : state.difficultyMult);
+
+    let desiredX = target.x;
+    let desiredY = target.y;
+    let currentSpeed = baseDocSpeed;
+
+    // State Machine Transitions
+    doc.stateTimer -= dt;
+
+    if (doc.aiState === 'RECOVER') {
+      currentSpeed = baseDocSpeed * 0.35;
+      if (doc.stateTimer <= 0) {
+        doc.aiState = 'SEARCH';
+        doc.stateTimer = 1.2;
+      }
+    } else if (doc.aiState === 'ATTACK') {
+      // High-speed lunge along locked vector with slight homing
+      currentSpeed = baseDocSpeed * 1.48;
+      desiredX = doc.x + doc.lungeDir.x * 160 + (target.x - doc.x) * 0.35;
+      desiredY = doc.y + doc.lungeDir.y * 160 + (target.y - doc.y) * 0.35;
+      if (doc.stateTimer <= 0) {
+        doc.aiState = 'RECOVER';
+        doc.stateTimer = 0.75;
+      }
+    } else if (doc.aiState === 'PATROL') {
+      currentSpeed = baseDocSpeed * 0.78;
+      desiredX = doc.patrolTarget.x;
+      desiredY = doc.patrolTarget.y;
+      if (Math.hypot(desiredX - doc.x, desiredY - doc.y) < 50) {
+        doc.patrolTarget = findFreeSpot(mapObj, 220);
+      }
+      if (doc.stateTimer <= 0 && distToTarget < 680) {
+        doc.aiState = 'SEARCH';
+        doc.stateTimer = 1.4;
+      }
+    } else {
+      // Dynamic evaluation between SEARCH, CHASE, PREDICT, and ATTACK
+      if (distToTarget < 145 && !isDemoMode && head.shieldTime <= 0) {
+        // Trigger ATTACK lunge!
+        doc.aiState = 'ATTACK';
+        doc.stateTimer = 0.48;
+        const ldx = target.x - doc.x;
+        const ldy = target.y - doc.y;
+        const ld = Math.hypot(ldx, ldy) || 1;
+        doc.lungeDir = { x: ldx / ld, y: ldy / ld };
+        sfx.playClick();
+      } else {
+        // Check if Dragon Head is standing between Doctor and Tail
+        const toTailX = target.x - doc.x;
+        const toTailY = target.y - doc.y;
+        const toHeadX = head.x - doc.x;
+        const toHeadY = head.y - doc.y;
+        const dot = (toTailX * toHeadX + toTailY * toHeadY) / ((distToTarget * distToHead) || 1);
+        const headIsBlocking = dot > 0.72 && distToHead < distToTarget;
+
+        if (headIsBlocking && !state.decoy) {
+          // SEARCH / FLANK around the Dragon Head to reach the tail!
+          doc.aiState = 'SEARCH';
+          const perpX = -toHeadY / (distToHead || 1) * doc.flankSign;
+          const perpY = toHeadX / (distToHead || 1) * doc.flankSign;
+          desiredX = target.x + perpX * 210;
+          desiredY = target.y + perpY * 210;
+          currentSpeed = baseDocSpeed * 1.08;
+        } else if (distToTarget < 340 && state.children.length >= 2 && !state.decoy) {
+          // PREDICT where the tail will move next based on preceding child
+          doc.aiState = 'PREDICT';
+          const prevChild = state.children[state.children.length - 2];
+          const tailVelX = prevChild.x - target.x;
+          const tailVelY = prevChild.y - target.y;
+          desiredX = target.x + tailVelX * 1.65;
+          desiredY = target.y + tailVelY * 1.65;
+          currentSpeed = baseDocSpeed * 1.06;
+        } else {
+          // Direct CHASE towards the last child
+          doc.aiState = 'CHASE';
+          desiredX = target.x;
+          desiredY = target.y;
+          currentSpeed = baseDocSpeed * 1.02;
+        }
+      }
+    }
+
+    // Steering & Obstacle Avoidance Rays
+    let dirX = desiredX - doc.x;
+    let dirY = desiredY - doc.y;
+    const dirLen = Math.hypot(dirX, dirY) || 1;
+    dirX /= dirLen;
+    dirY /= dirLen;
+
+    // Obstacle repulsion steering so AI smoothly navigates around obstacles
+    for (const ob of mapObj.obstacles) {
+      const ox = doc.x - ob.x;
+      const oy = doc.y - ob.y;
+      const od = Math.hypot(ox, oy);
+      const avoidRadius = ob.r + doc.radius + 70;
+      if (od < avoidRadius && od > 0.001) {
+        const strength = Math.pow((avoidRadius - od) / avoidRadius, 1.5) * 2.4;
+        // Add tangential slide so AI doesn't get stuck head-on
+        const tangX = -oy / od * doc.flankSign;
+        const tangY = ox / od * doc.flankSign;
+        dirX += (ox / od) * strength + tangX * strength * 0.7;
+        dirY += (oy / od) * strength + tangY * strength * 0.7;
+      }
+    }
+
+    // Avoid mid-body children slightly so AI arcs around the dragon body toward the tail
+    if (!state.decoy && state.children.length > 1) {
+      for (let i = 0; i < state.children.length - 1; i++) {
+        const ch = state.children[i];
+        const cx = doc.x - ch.x;
+        const cy = doc.y - ch.y;
+        const cd = Math.hypot(cx, cy);
+        if (cd < 62 && cd > 0.01) {
+          const push = ((62 - cd) / 62) * 1.3;
+          dirX += (cx / cd) * push;
+          dirY += (cy / cd) * push;
+        }
+      }
+    }
+
+    // Normalize final steering vector
+    const finalLen = Math.hypot(dirX, dirY) || 1;
+    dirX /= finalLen;
+    dirY /= finalLen;
+
+    const steerRate = 1 - Math.exp(-10 * dt);
+    doc.vx += (dirX - doc.vx) * steerRate;
+    doc.vy += (dirY - doc.vy) * steerRate;
+    const vLen = Math.hypot(doc.vx, doc.vy) || 1;
+    doc.vx /= vLen;
+    doc.vy /= vLen;
+
+    doc.x += doc.vx * currentSpeed * dt;
+    doc.y += doc.vy * currentSpeed * dt;
+    doc.angle = Math.atan2(doc.vy, doc.vx);
+
+    resolveEntityObstacles(doc, mapObj);
+
+    // Scare nearby tail child for expressive chibi faces
+    if (state.children.length > 0) {
+      const lastChild = state.children[state.children.length - 1];
+      if (Math.hypot(lastChild.x - doc.x, lastChild.y - doc.y) < 150) {
+        lastChild.scared = 0.35;
+      }
+    }
+
+    // Spawn dust if AI is sprinting/attacking
+    if (Math.random() < (doc.aiState === 'ATTACK' ? 0.55 : 0.22)) {
+      spawnDust(doc.x - doc.vx * 14, doc.y + 18, '#e8d5b5');
+    }
+  }
+
+  // ==========================================
+  // 9. COLLISIONS & GAMEPLAY LOGIC
+  // ==========================================
+  function handleGameplayCollisions(dt) {
+    const head = state.head;
+    const doc = state.doctor;
+
+    // 1. Check Decoy collision
+    if (state.decoy && state.decoy.timer > 0) {
+      const dDecoy = Math.hypot(doc.x - state.decoy.x, doc.y - state.decoy.y);
+      if (dDecoy < doc.radius + state.decoy.radius) {
+        spawnBurst(state.decoy.x, state.decoy.y, '#ffbe76', 24, 170);
+        addFloatingText(state.decoy.x, state.decoy.y - 25, '💥 Thầy Thuốc mắc lừa! +80đ', '#ffe159');
+        state.score += 80;
+        state.decoy = null;
+        doc.aiState = 'RECOVER';
+        doc.stateTimer = 1.5;
+        sfx.playBlockSuccess();
+      }
+    }
+
+    // 2. Check Dragon Head blocking vs Doctor
+    const dHead = Math.hypot(doc.x - head.x, doc.y - head.y);
+    if (dHead < doc.radius + head.radius) {
+      const nx = (doc.x - head.x) / (dHead || 1);
+      const ny = (doc.y - head.y) / (dHead || 1);
+
+      if (head.shieldTime > 0 || head.dashTime > 0 || state.children.length > 0) {
+        // Head successfully blocks / intercepts the Doctor to protect the tail!
+        if (state.children.length > 0 || head.shieldTime > 0 || head.dashTime > 0) {
+          doc.x = head.x + nx * (doc.radius + head.radius + 28);
+          doc.y = head.y + ny * (doc.radius + head.radius + 28);
+          doc.aiState = 'RECOVER';
+          doc.stateTimer = 1.15;
+          state.score += 50;
+          state.ComboBlocks++;
+          sfx.playBlockSuccess();
+          triggerShake(7);
+          spawnBurst((head.x + doc.x) / 2, (head.y + doc.y) / 2, '#ffe159', 16, 150);
+          addFloatingText(head.x, head.y - 40, '🐉 Cản đường Thầy Thuốc! +50đ', '#7bed9f');
+          return;
+        }
+      }
+
+      // If no children left and no shield/dash, Head is captured -> Game Over
+      if (state.children.length === 0 && head.shieldTime <= 0) {
+        sfx.playCaptured();
+        triggerShake(16);
+        state.redFlash = 0.6;
+        finishGame(false, 'Đầu Rồng đã bị Thầy Thuốc bắt được!');
+        return;
+      }
+    }
+
+    // 3. Check Doctor capturing the LAST child (Tail)
+    if (state.children.length > 0 && doc.aiState !== 'RECOVER') {
+      const lastIdx = state.children.length - 1;
+      const tailChild = state.children[lastIdx];
+      const dTail = Math.hypot(doc.x - tailChild.x, doc.y - tailChild.y);
+
+      if (dTail < doc.radius + tailChild.radius - 2) {
+        if (head.shieldTime > 0) {
+          // Shield repels Doctor!
+          const rx = (doc.x - tailChild.x) / (dTail || 1);
+          const ry = (doc.y - tailChild.y) / (dTail || 1);
+          doc.x = tailChild.x + rx * 75;
+          doc.y = tailChild.y + ry * 75;
+          doc.aiState = 'RECOVER';
+          doc.stateTimer = 1.25;
+          state.score += 60;
+          sfx.playBlockSuccess();
+          spawnBurst(tailChild.x, tailChild.y, '#7ed6df', 20, 150);
+          addFloatingText(tailChild.x, tailChild.y - 30, '🛡️ Khiên cản Thầy Thuốc! +60đ', '#7ed6df');
+        } else {
+          // Last child is captured!
+          const captured = state.children.pop();
+          sfx.playCaptured();
+          triggerShake(14);
+          state.redFlash = 0.45;
+          head.expression = 'shock';
+          setTimeout(() => { if (state.head) state.head.expression = 'happy'; }, 900);
+
+          spawnBurst(captured.x, captured.y, captured.palette.shirt, 26, 180);
+          addFloatingText(captured.x, captured.y - 32, `😱 ${captured.palette.name} bị bắt!`, '#ff6b6b');
+
+          // Knockback & Recover so Doctor doesn't chain-capture instantly
+          const kx = (doc.x - captured.x) / (dTail || 1);
+          const ky = (doc.y - captured.y) / (dTail || 1);
+          doc.x += kx * 65;
+          doc.y += ky * 65;
+          doc.aiState = 'RECOVER';
+          doc.stateTimer = 1.85;
+          head.shieldTime = 1.5; // Brief grace shield for remaining tail
+
+          if (state.children.length === 0) {
+            finishGame(false, 'Toàn bộ các em nhỏ trong đoàn đã bị bắt!');
+            return;
+          }
+        }
+      }
+    }
+
+    // 4. Pickups Collection by Dragon Head
+    for (let i = state.pickups.length - 1; i >= 0; i--) {
+      const pk = state.pickups[i];
+      pk.bob += dt * 4;
+      if (Math.hypot(head.x - pk.x, head.y - pk.y) < head.radius + pk.r) {
+        sfx.playPickup();
+        if (pk.type === 'star') {
+          state.score += 120;
+          spawnBurst(pk.x, pk.y, '#ffe159', 16, 130);
+          addFloatingText(pk.x, pk.y - 24, '⭐ Đèn Sao +120đ!', '#ffe159');
+        } else {
+          head.stamina = Math.min(head.maxStamina, head.stamina + 45);
+          state.score += 60;
+          spawnBurst(pk.x, pk.y, '#7bed9f', 16, 130);
+          addFloatingText(pk.x, pk.y - 24, '🍵 Nước Mía +45% Năng Lượng!', '#7bed9f');
+        }
+        state.pickups.splice(i, 1);
+        // Respawn pickup after delay
+        setTimeout(() => {
+          if (state.mode === 'PLAYING' && state.pickups.length < 3) {
+            const spot = findFreeSpot(getCurrentMap(), 190);
+            state.pickups.push({
+              x: spot.x,
+              y: spot.y,
+              r: 18,
+              type: Math.random() < 0.6 ? 'star' : 'tea',
+              bob: 0
+            });
+          }
+        }, 4500);
+      }
+    }
+  }
+
+  // ==========================================
+  // 10. MAIN UPDATE LOOP
+  // ==========================================
+  function updateGame(dt) {
+    state.animTime += dt;
+    const mapObj = getCurrentMap();
+    const head = state.head;
+
+    if (state.screenShake > 0) {
+      state.screenShake = Math.max(0, state.screenShake - dt * 28);
+    }
+    if (state.redFlash > 0) state.redFlash = Math.max(0, state.redFlash - dt * 1.4);
+    if (state.goldFlash > 0) state.goldFlash = Math.max(0, state.goldFlash - dt * 1.4);
+
+    // Update particles & floating texts
+    for (let i = state.particles.length - 1; i >= 0; i--) {
+      const p = state.particles[i];
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.life -= dt;
+      if (p.life <= 0) state.particles.splice(i, 1);
+    }
+    for (let i = state.floatingTexts.length - 1; i >= 0; i--) {
+      const ft = state.floatingTexts[i];
+      ft.y -= 38 * dt;
+      ft.life -= dt;
+      if (ft.life <= 0) state.floatingTexts.splice(i, 1);
+    }
+
+    // Background Demo Mode when on Home Menu
+    if (state.mode === 'MENU') {
+      const t = state.animTime * 0.75;
+      const targetX = WORLD.w * 0.58 + Math.cos(t) * 320;
+      const targetY = WORLD.h * 0.56 + Math.sin(t * 1.3) * 210;
+      const dx = targetX - head.x;
+      const dy = targetY - head.y;
+      const d = Math.hypot(dx, dy) || 1;
+      head.vx = dx / d;
+      head.vy = dy / d;
+      head.angle = Math.atan2(head.vy, head.vx);
+      head.x += head.vx * 220 * dt;
+      head.y += head.vy * 220 * dt;
+      resolveEntityObstacles(head, mapObj);
+      recordHeadPath(head);
+      updateChildrenAlongPath(dt, mapObj);
+      updateDoctorAI(dt, mapObj, true);
+      if (Math.random() < 0.35) spawnDust(head.x - head.vx * 15, head.y + 18, '#f0d8a8');
+      return;
+    }
+
+    if (state.mode !== 'PLAYING') return;
+
+    // Cooldown timers
+    for (const k in state.skills) {
+      if (state.skills[k].cd > 0) {
+        state.skills[k].cd = Math.max(0, state.skills[k].cd - dt);
+      }
+    }
+    if (head.dashTime > 0) head.dashTime = Math.max(0, head.dashTime - dt);
+    if (head.shieldTime > 0) head.shieldTime = Math.max(0, head.shieldTime - dt);
+    if (head.infiniteStaminaTime > 0) head.infiniteStaminaTime = Math.max(0, head.infiniteStaminaTime - dt);
+
+    if (state.decoy) {
+      state.decoy.timer -= dt;
+      if (state.decoy.timer <= 0) state.decoy = null;
+    }
+
+    // Player Input Vector
+    let ix = 0;
+    let iy = 0;
+    if (keys['KeyW'] || keys['ArrowUp']) iy -= 1;
+    if (keys['KeyS'] || keys['ArrowDown']) iy += 1;
+    if (keys['KeyA'] || keys['ArrowLeft']) ix -= 1;
+    if (keys['KeyD'] || keys['ArrowRight']) ix += 1;
+
+    if (joystick.active && (Math.abs(joystick.dx) > 0.05 || Math.abs(joystick.dy) > 0.05)) {
+      ix = joystick.dx;
+      iy = joystick.dy;
+    }
+
+    // Smooth steering of Dragon Head
+    if (Math.hypot(ix, iy) > 0.05) {
+      const ilen = Math.hypot(ix, iy);
+      ix /= ilen;
+      iy /= ilen;
+      const turnRate = head.dashTime > 0 ? 22 : 12;
+      const blend = 1 - Math.exp(-turnRate * dt);
+      head.vx += (ix - head.vx) * blend;
+      head.vy += (iy - head.vy) * blend;
+      const vlen = Math.hypot(head.vx, head.vy) || 1;
+      head.vx /= vlen;
+      head.vy /= vlen;
+      head.angle = Math.atan2(head.vy, head.vx);
+    }
+
+    // Sprint & Speed calculation
+    const wantsSprint = keys['ShiftLeft'] || keys['ShiftRight'] || sprintButtonHeld;
+    if (wantsSprint && (head.stamina > 2 || head.infiniteStaminaTime > 0)) {
+      head.sprinting = true;
+      if (head.infiniteStaminaTime <= 0) {
+        head.stamina = Math.max(0, head.stamina - 26 * dt);
+      }
+    } else {
+      head.sprinting = false;
+      head.stamina = Math.min(head.maxStamina, head.stamina + 16 * dt);
+    }
+
+    let speed = head.baseSpeed;
+    if (head.sprinting) speed *= 1.38;
+    if (head.dashTime > 0) speed *= 1.85;
+
+    head.x += head.vx * speed * dt;
+    head.y += head.vy * speed * dt;
+
+    resolveEntityObstacles(head, mapObj);
+    recordHeadPath(head);
+    updateChildrenAlongPath(dt, mapObj);
+
+    if (Math.random() < (head.sprinting || head.dashTime > 0 ? 0.65 : 0.28)) {
+      spawnDust(head.x - head.vx * 18, head.y + 18, '#f2dcb3');
+    }
+
+    // Update AI Doctor
+    updateDoctorAI(dt, mapObj, false);
+
+    // Collisions
+    handleGameplayCollisions(dt);
+
+    // Round Timer & Score Progression
+    state.timeLeft -= dt;
+    state.score += dt * (8 + state.children.length * 2);
+
+    if (state.timeLeft <= 0) {
+      // Round cleared!
+      const survBonus = state.children.length * 150;
+      const roundBonus = (state.roundIndex + 1) * 250;
+      state.score += survBonus + roundBonus;
+      state.goldFlash = 0.55;
+
+      if (state.roundIndex < ROUNDS.length - 1) {
+        addFloatingText(head.x, head.y - 45, `🎉 Qua Vòng! Thưởng +${survBonus + roundBonus}đ`, '#ffe159');
+        startRound(state.roundIndex + 1);
+      } else {
+        finishGame(true, `Tuyệt vời! Bạn đã vượt qua cả 3 vòng với ${state.children.length} em nhỏ bình an!`);
+      }
+    }
+
+    updateHUD();
+  }
+
+  // ==========================================
+  // 11. HUD, MODALS & LEADERBOARD
+  // ==========================================
+  function updateHUD() {
+    const secs = Math.max(0, Math.ceil(state.timeLeft));
+    const mm = String(Math.floor(secs / 60)).padStart(2, '0');
+    const ss = String(secs % 60).padStart(2, '0');
+    document.getElementById('hud-time').textContent = `${mm}:${ss}`;
+    document.getElementById('hud-members').textContent = `1 + ${state.children.length}`;
+    document.getElementById('hud-score').textContent = Math.floor(state.score).toLocaleString('vi-VN');
+    document.getElementById('hud-round').textContent = `${state.roundIndex + 1}/${ROUNDS.length}`;
+
+    const stamPct = Math.round((state.head.stamina / state.head.maxStamina) * 100);
+    document.getElementById('stamina-fill').style.width = `${stamPct}%`;
+    document.getElementById('stamina-text').textContent = state.head.infiniteStaminaTime > 0 ? 'VÔ HẠN!' : `${stamPct}%`;
+
+    // AI State indicator
+    const aiMap = {
+      PATROL: { text: 'Thầy Thuốc: Tuần Tra', color: '#2ecc71' },
+      SEARCH: { text: 'Thầy Thuốc: Bọc Sườn Tìm Đuôi', color: '#f1c40f' },
+      CHASE: { text: 'Thầy Thuốc: Đuổi Bắt Đuôi', color: '#e67e22' },
+      PREDICT: { text: 'Thầy Thuốc: Đón Đầu Đuôi', color: '#ff6b6b' },
+      ATTACK: { text: 'Thầy Thuốc: VỒ BẮT!', color: '#ff2e2e' },
+      RECOVER: { text: 'Thầy Thuốc: Choáng / Hồi Sức', color: '#7ed6df' }
+    };
+    const info = aiMap[state.doctor.aiState] || aiMap.PATROL;
+    document.getElementById('ai-state-label').textContent = info.text;
+    document.getElementById('ai-state-dot').style.background = info.color;
+
+    // Cooldown overlays
+    ['dash', 'decoy', 'shield', 'stamina'].forEach(k => {
+      const cd = state.skills[k].cd;
+      const el = document.getElementById(`cd-${k}`);
+      if (cd > 0) {
+        el.style.opacity = '1';
+        el.textContent = cd.toFixed(1) + 's';
+      } else {
+        el.style.opacity = '0';
+      }
+    });
+  }
+
+  function finishGame(victory, reasonText) {
+    state.mode = 'GAMEOVER';
+    const finalScore = Math.floor(state.score);
+    saveLeaderboardScore(finalScore, state.children.length, state.roundIndex + 1, victory);
+
+    document.getElementById('end-title').textContent = victory ? '🏆 RỒNG RẮN LÊN MÂY!' : '💥 KẾT THÚC VÒNG CHƠI';
+    document.getElementById('end-subtitle').textContent = reasonText;
+    document.getElementById('end-score').textContent = finalScore.toLocaleString('vi-VN');
+    document.getElementById('end-survivors').textContent = `${state.children.length} em nhỏ`;
+    document.getElementById('end-round').textContent = `${state.roundIndex + 1}/${ROUNDS.length}`;
+
+    let rank = 'Tân Binh Xóm Nhỏ';
+    if (finalScore >= 3500) rank = 'Thần Đồng Đẫn Đầu Rồng';
+    else if (finalScore >= 2200) rank = 'Đầu Rồng Tài Ba';
+    else if (finalScore >= 1200) rank = 'Đội Trưởng Nhanh Nhẹn';
+    document.getElementById('end-rank').textContent = rank;
+
+    document.getElementById('modal-gameover').classList.add('open');
+  }
+
+  function saveLeaderboardScore(score, survivors, roundReached, victory) {
+    try {
+      const raw = localStorage.getItem('rrlm_leaderboard_v1');
+      const list = raw ? JSON.parse(raw) : [];
+      list.push({
+        score,
+        survivors,
+        round: roundReached,
+        victory,
+        date: new Date().toLocaleDateString('vi-VN')
+      });
+      list.sort((a, b) => b.score - a.score);
+      localStorage.setItem('rrlm_leaderboard_v1', JSON.stringify(list.slice(0, 8)));
+    } catch (e) {}
+  }
+
+  function renderLeaderboard() {
+    const container = document.getElementById('leaderboard-content');
+    let list = [];
+    try {
+      const raw = localStorage.getItem('rrlm_leaderboard_v1');
+      list = raw ? JSON.parse(raw) : [];
+    } catch (e) {}
+
+    if (list.length === 0) {
+      // Seed classic folk records so table looks welcoming on first visit
+      list = [
+        { score: 3450, survivors: 7, round: 3, victory: true, date: 'Kỷ lục Làng' },
+        { score: 2180, survivors: 5, round: 3, victory: true, date: 'Đội Trống Hội' },
+        { score: 1420, survivors: 3, round: 2, victory: false, date: 'Xóm Tre Xanh' }
+      ];
+    }
+
+    let html = `<table class="leaderboard-table">
+      <thead>
+        <tr>
+          <th>Hạng</th>
+          <th>Điểm Số</th>
+          <th>Vòng</th>
+          <th>Còn Lại</th>
+          <th>Ghi Chú</th>
+        </tr>
+      </thead>
+      <tbody>`;
+    list.forEach((item, idx) => {
+      const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`;
+      html += `<tr>
+        <td><b>${medal}</b></td>
+        <td style="color:#ffe159; font-weight:800;">${Number(item.score).toLocaleString('vi-VN')}</td>
+        <td>${item.round}/3</td>
+        <td>${item.survivors} bé</td>
+        <td>${item.date}</td>
+      </tr>`;
+    });
+    html += `</tbody></table>`;
+    container.innerHTML = html;
+  }
+
+  // ==========================================
+  // 12. PARTICLES & VISUAL HELPERS
+  // ==========================================
+  function spawnDust(x, y, color = '#f0d9ad') {
+    if (state.particles.length > 110) return;
+    state.particles.push({
+      x: x + (Math.random() - 0.5) * 14,
+      y: y + (Math.random() - 0.5) * 10,
+      vx: (Math.random() - 0.5) * 28,
+      vy: -10 - Math.random() * 24,
+      r: 5 + Math.random() * 8,
+      color,
+      life: 0.45 + Math.random() * 0.25,
+      maxLife: 0.7
+    });
+  }
+
+  function spawnBurst(x, y, color, count = 16, speed = 140) {
+    for (let i = 0; i < count; i++) {
+      const ang = (Math.PI * 2 * i) / count + Math.random() * 0.3;
+      const spd = speed * (0.4 + Math.random() * 0.7);
+      state.particles.push({
+        x,
+        y,
+        vx: Math.cos(ang) * spd,
+        vy: Math.sin(ang) * spd,
+        r: 4 + Math.random() * 6,
+        color,
+        life: 0.45 + Math.random() * 0.3,
+        maxLife: 0.75
+      });
+    }
+  }
+
+  function addFloatingText(x, y, text, color = '#ffffff') {
+    state.floatingTexts.push({
+      x,
+      y,
+      text,
+      color,
+      life: 1.35,
+      maxLife: 1.35
+    });
+  }
+
+  function triggerShake(amount) {
+    if (state.shakeEnabled) {
+      state.screenShake = Math.max(state.screenShake, amount);
+    }
+  }
+
+  // ==========================================
+  // 13. CHIBI 2D CARTOON RENDERING ENGINE
+  // ==========================================
+  function resizeCanvas() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = window.innerWidth * dpr;
+    canvas.height = window.innerHeight * dpr;
+  }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
+  function renderScene() {
+    const cw = canvas.width;
+    const ch = canvas.height;
+    ctx.save();
+
+    // Scale world (1600x1000) to cover/fit viewport nicely
+    const scaleX = cw / WORLD.w;
+    const scaleY = ch / WORLD.h;
+    const scale = Math.max(scaleX, scaleY * 0.96);
+    const offsetX = (cw - WORLD.w * scale) * 0.5;
+    const offsetY = (ch - WORLD.h * scale) * 0.5;
+
+    ctx.fillStyle = '#2d5a18';
+    ctx.fillRect(0, 0, cw, ch);
+
+    ctx.translate(offsetX, offsetY);
+    ctx.scale(scale, scale);
+
+    // Apply Screen Shake
+    if (state.screenShake > 0.2) {
+      const sx = (Math.random() - 0.5) * state.screenShake * 2;
+      const sy = (Math.random() - 0.5) * state.screenShake * 2;
+      ctx.translate(sx, sy);
+    }
+
+    const mapObj = getCurrentMap();
+
+    // 1. Draw Village Courtyard Background, Pond, Thatch House, Fences & Bamboo
+    drawVillageEnvironment(mapObj);
+
+    // 2. Draw Collectibles / Pickups
+    drawPickups();
+
+    // 3. Draw Decoy if active
+    if (state.decoy && state.decoy.timer > 0) {
+      drawDecoyPuppet(state.decoy);
+    }
+
+    // 4. Draw Connecting Festive Red-Gold Dragon Cloth Body between Head and Children
+    drawDragonBodyConnector();
+
+    // 5. Sort characters & obstacles by Y coordinate (2.5D Painter's Algorithm depth)
+    const renderables = [];
+
+    for (const ob of mapObj.obstacles) {
+      renderables.push({ y: ob.y + ob.r * 0.4, type: 'obstacle', data: ob });
+    }
+
+    for (let i = state.children.length - 1; i >= 0; i--) {
+      const chObj = state.children[i];
+      renderables.push({
+        y: chObj.y + chObj.radius,
+        type: 'child',
+        data: chObj,
+        isLast: i === state.children.length - 1
+      });
+    }
+
+    renderables.push({
+      y: state.head.y + state.head.radius,
+      type: 'head',
+      data: state.head
+    });
+
+    renderables.push({
+      y: state.doctor.y + state.doctor.radius,
+      type: 'doctor',
+      data: state.doctor
+    });
+
+    renderables.sort((a, b) => a.y - b.y);
+
+    for (const item of renderables) {
+      if (item.type === 'obstacle') drawObstacle(item.data);
+      else if (item.type === 'child') drawChibiChild(item.data, item.isLast);
+      else if (item.type === 'head') drawDragonHeadLeader(item.data);
+      else if (item.type === 'doctor') drawDoctorCharacter(item.data);
+    }
+
+    // 6. Draw Dust & Burst Particles
+    for (const p of state.particles) {
+      const alpha = Math.max(0, p.life / p.maxLife);
+      ctx.save();
+      ctx.globalAlpha = alpha * 0.85;
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r * (1.2 - alpha * 0.4), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // 7. Draw Floating Combat/Score Texts
+    for (const ft of state.floatingTexts) {
+      const alpha = Math.min(1, ft.life / ft.maxLife * 1.4);
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.font = '800 22px "Baloo 2", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = '#381802';
+      ctx.strokeText(ft.text, ft.x, ft.y);
+      ctx.fillStyle = ft.color;
+      ctx.fillText(ft.text, ft.x, ft.y);
+      ctx.restore();
+    }
+
+    // 8. Foreground Bush Trim at corners (matching concept framing)
+    drawForegroundFoliage();
+
+    ctx.restore();
+
+    // Screen Flashes (Capture / Round Win)
+    if (state.redFlash > 0) {
+      ctx.fillStyle = `rgba(230, 40, 30, ${state.redFlash * 0.45})`;
+      ctx.fillRect(0, 0, cw, ch);
+    }
+    if (state.goldFlash > 0) {
+      ctx.fillStyle = `rgba(255, 225, 90, ${state.goldFlash * 0.4})`;
+      ctx.fillRect(0, 0, cw, ch);
+    }
+  }
+
+  function drawVillageEnvironment(mapObj) {
+    // Outer green lush border
+    ctx.fillStyle = mapObj.grassColor;
+    ctx.fillRect(0, 0, WORLD.w, WORLD.h);
+
+    // Top Pond / Ao Làng (like top-right of concept art)
+    const wp = mapObj.waterPos;
+    const pondGrad = ctx.createLinearGradient(wp.x, wp.y, wp.x, wp.y + wp.h);
+    pondGrad.addColorStop(0, '#1e90ff');
+    pondGrad.addColorStop(1, '#48dbfb');
+    ctx.fillStyle = pondGrad;
+    ctx.beginPath();
+    ctx.ellipse(wp.x + wp.w * 0.5, wp.y + wp.h * 0.45, wp.w * 0.55, wp.h * 0.68, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = '#75b843';
+    ctx.stroke();
+
+    // Lily pads & ripples in pond
+    ctx.fillStyle = '#2ecc71';
+    for (let i = 0; i < 5; i++) {
+      const lx = wp.x + 90 + i * 95;
+      const ly = wp.y + 32 + (i % 2) * 28;
+      ctx.beginPath();
+      ctx.arc(lx, ly, 15, 0.2, Math.PI * 1.85);
+      ctx.lineTo(lx, ly);
+      ctx.fill();
+      if (i % 2 === 0) {
+        ctx.fillStyle = '#ff78ae';
+        ctx.beginPath();
+        ctx.arc(lx + 3, ly - 3, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#2ecc71';
+      }
+    }
+
+    // Sandy Golden Dirt Courtyard (Sân Làng)
+    const dirtGrad = ctx.createRadialGradient(
+      WORLD.w * 0.52, WORLD.h * 0.54, 90,
+      WORLD.w * 0.52, WORLD.h * 0.54, 780
+    );
+    dirtGrad.addColorStop(0, mapObj.groundTop);
+    dirtGrad.addColorStop(1, mapObj.groundBot);
+
+    ctx.fillStyle = dirtGrad;
+    ctx.beginPath();
+    ctx.roundRect(WORLD.pad, WORLD.pad + 55, WORLD.w - WORLD.pad * 2, WORLD.h - WORLD.pad * 2 - 55, 65);
+    ctx.fill();
+    ctx.lineWidth = 10;
+    ctx.strokeStyle = '#70a83b';
+    ctx.stroke();
+
+    // Subtle dirt patches & grass tufts inside courtyard
+    for (const sp of state.sceneryProps) {
+      if (sp.type === 'pebble') {
+        ctx.fillStyle = 'rgba(130, 95, 50, 0.35)';
+        ctx.beginPath();
+        ctx.ellipse(sp.x, sp.y, 12 * sp.scale, 7 * sp.scale, 0.2, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        ctx.strokeStyle = '#6ab030';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(sp.x, sp.y);
+        ctx.lineTo(sp.x - 6, sp.y - 10 * sp.scale);
+        ctx.moveTo(sp.x, sp.y);
+        ctx.lineTo(sp.x + 1, sp.y - 13 * sp.scale);
+        ctx.moveTo(sp.x, sp.y);
+        ctx.lineTo(sp.x + 7, sp.y - 9 * sp.scale);
+        ctx.stroke();
+      }
+    }
+
+    // Wooden Village Fences along Top & Bottom edges
+    drawWoodenFenceRow(240, 128, 1150, 9);
+    drawWoodenFenceRow(260, WORLD.h - 76, 1080, 8);
+
+    // Bamboo Groves along Left & Right borders
+    drawBambooStalks(52, 200, 6);
+    drawBambooStalks(WORLD.w - 62, 220, 6);
+
+    // Traditional Vietnamese Thatch Roof House (Nhà Tranh) on bottom-left
+    drawThatchHouse(68, WORLD.h - 245);
+
+    // Hanging Red Lantern Post near top-left courtyard entrance
+    drawLanternPost(560, 130);
+  }
+
+  function drawWoodenFenceRow(startX, y, totalWidth, posts) {
+    const step = totalWidth / posts;
+    ctx.save();
+    ctx.fillStyle = '#8b4d1b';
+    ctx.strokeStyle = '#472204';
+    ctx.lineWidth = 3;
+
+    // Horizontal rails
+    ctx.fillRect(startX, y - 24, totalWidth, 8);
+    ctx.strokeRect(startX, y - 24, totalWidth, 8);
+    ctx.fillRect(startX, y - 10, totalWidth, 8);
+    ctx.strokeRect(startX, y - 10, totalWidth, 8);
+
+    // Vertical posts
+    for (let i = 0; i <= posts; i++) {
+      const px = startX + i * step;
+      ctx.fillStyle = '#a35c24';
+      ctx.beginPath();
+      ctx.roundRect(px - 6, y - 36, 12, 42, 3);
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawBambooStalks(x, startY, count) {
+    ctx.save();
+    for (let i = 0; i < count; i++) {
+      const bx = x + (i % 2) * 16 - 8;
+      const by = startY + i * 95;
+      ctx.strokeStyle = '#2d6a1e';
+      ctx.lineWidth = 10;
+      ctx.beginPath();
+      ctx.moveTo(bx, by + 65);
+      ctx.quadraticCurveTo(bx - 6, by + 20, bx + 4, by - 35);
+      ctx.stroke();
+
+      // Bamboo nodes
+      ctx.strokeStyle = '#8be053';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(bx - 6, by + 30);
+      ctx.lineTo(bx + 6, by + 30);
+      ctx.moveTo(bx - 5, by);
+      ctx.lineTo(bx + 7, by);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawThatchHouse(x, y) {
+    ctx.save();
+    // Mud wall
+    ctx.fillStyle = '#d4a359';
+    ctx.strokeStyle = '#4f2808';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.roundRect(x, y + 60, 120, 95, 6);
+    ctx.fill();
+    ctx.stroke();
+
+    // Window
+    ctx.fillStyle = '#4a2810';
+    ctx.fillRect(x + 24, y + 82, 34, 34);
+    ctx.strokeStyle = '#8c5322';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(x + 24, y + 82, 34, 34);
+
+    // Golden Straw Roof (Mái tranh)
+    ctx.fillStyle = '#f0b938';
+    ctx.strokeStyle = '#633708';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(x - 22, y + 72);
+    ctx.quadraticCurveTo(x + 60, y - 10, x + 145, y + 72);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawLanternPost(x, y) {
+    const sway = Math.sin(state.animTime * 3) * 4;
+    ctx.save();
+    ctx.fillStyle = '#6e3b10';
+    ctx.strokeStyle = '#361902';
+    ctx.lineWidth = 3;
+    ctx.fillRect(x - 5, y - 55, 10, 75);
+    ctx.strokeRect(x - 5, y - 55, 10, 75);
+    ctx.fillRect(x - 5, y - 50, 44, 8);
+    ctx.strokeRect(x - 5, y - 50, 44, 8);
+
+    // Red Lantern
+    const lx = x + 32 + sway;
+    const ly = y - 24;
+    ctx.strokeStyle = '#ffd32a';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x + 32, y - 42);
+    ctx.lineTo(lx, ly - 12);
+    ctx.stroke();
+
+    ctx.fillStyle = '#e82c25';
+    ctx.strokeStyle = '#5c0c06';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.ellipse(lx, ly, 13, 16, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffd32a';
+    ctx.fillRect(lx - 6, ly - 17, 12, 4);
+    ctx.fillRect(lx - 5, ly + 14, 10, 4);
+    ctx.restore();
+  }
+
+  function drawForegroundFoliage() {
+    ctx.save();
+    const bushes = [
+      { x: 40, y: 80, r: 55, c: '#379424' },
+      { x: 110, y: 40, r: 48, c: '#4eb835' },
+      { x: WORLD.w - 50, y: 75, r: 58, c: '#379424' },
+      { x: 55, y: WORLD.h - 40, r: 62, c: '#3c9c28' },
+      { x: 140, y: WORLD.h - 25, r: 52, c: '#54c43b' },
+      { x: WORLD.w - 60, y: WORLD.h - 45, r: 64, c: '#3c9c28' }
+    ];
+    for (const b of bushes) {
+      ctx.fillStyle = b.c;
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // ==========================================
+  // 14. OBSTACLES & PICKUPS RENDERING
+  // ==========================================
+  function drawObstacle(ob) {
+    ctx.save();
+    ctx.translate(ob.x, ob.y);
+
+    // Ground shadow
+    ctx.fillStyle = 'rgba(40, 22, 5, 0.28)';
+    ctx.beginPath();
+    ctx.ellipse(0, ob.r * 0.65, ob.r * 1.05, ob.r * 0.48, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.lineWidth = 3.5;
+    ctx.strokeStyle = '#3b1d06';
+
+    if (ob.type === 'haystack') {
+      // Golden Straw Haystack (Đống rơm)
+      const grad = ctx.createRadialGradient(-8, -12, 6, 0, 0, ob.r);
+      grad.addColorStop(0, '#ffe46b');
+      grad.addColorStop(1, '#d98c1e');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.moveTo(-ob.r * 0.95, ob.r * 0.55);
+      ctx.quadraticCurveTo(-ob.r * 0.6, -ob.r * 0.95, 0, -ob.r * 0.95);
+      ctx.quadraticCurveTo(ob.r * 0.6, -ob.r * 0.95, ob.r * 0.95, ob.r * 0.55);
+      ctx.quadraticCurveTo(0, ob.r * 0.85, -ob.r * 0.95, ob.r * 0.55);
+      ctx.fill();
+      ctx.stroke();
+
+      // Top knot
+      ctx.fillStyle = '#f5b935';
+      ctx.beginPath();
+      ctx.arc(0, -ob.r * 0.88, 10, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    } else if (ob.type === 'well') {
+      // Brick Village Well (Giếng làng)
+      ctx.fillStyle = '#b34829';
+      ctx.beginPath();
+      ctx.ellipse(0, 4, ob.r, ob.r * 0.78, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#1e90ff';
+      ctx.beginPath();
+      ctx.ellipse(0, 2, ob.r * 0.68, ob.r * 0.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    } else if (ob.type === 'bamboo_clump') {
+      // Green Bamboo Bush Clump
+      ctx.fillStyle = '#2e8b22';
+      ctx.beginPath();
+      ctx.arc(0, 0, ob.r * 0.92, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#5cd645';
+      for (let k = -1; k <= 1; k++) {
+        ctx.fillRect(k * 13 - 4, -ob.r * 0.85, 8, ob.r * 1.3);
+        ctx.strokeRect(k * 13 - 4, -ob.r * 0.85, 8, ob.r * 1.3);
+      }
+    } else if (ob.type === 'drum' || ob.type === 'lantern_pillar') {
+      // Festival Drum (Trống hội)
+      ctx.fillStyle = '#d62828';
+      ctx.beginPath();
+      ctx.arc(0, 0, ob.r * 0.92, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#fae19c';
+      ctx.beginPath();
+      ctx.arc(0, -4, ob.r * 0.68, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#d62828';
+      ctx.beginPath();
+      ctx.arc(0, -4, ob.r * 0.25, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (ob.type === 'jar') {
+      // Ceramic Water Jar (Lu nước)
+      ctx.fillStyle = '#9c471b';
+      ctx.beginPath();
+      ctx.arc(0, 2, ob.r * 0.88, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#48dbfb';
+      ctx.beginPath();
+      ctx.ellipse(0, -6, ob.r * 0.52, ob.r * 0.36, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    } else {
+      // Mossy Stone (Đá cuội)
+      ctx.fillStyle = '#7f8fa6';
+      ctx.beginPath();
+      ctx.ellipse(0, 4, ob.r * 0.95, ob.r * 0.76, -0.15, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#9c88ff';
+      ctx.globalAlpha = 0.2;
+      ctx.beginPath();
+      ctx.arc(-10, -6, ob.r * 0.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.restore();
+  }
+
+  function drawPickups() {
+    for (const pk of state.pickups) {
+      const by = pk.y + Math.sin(pk.bob) * 5;
+      ctx.save();
+      ctx.translate(pk.x, by);
+
+      // Glow aura
+      ctx.fillStyle = pk.type === 'star' ? 'rgba(255, 225, 80, 0.32)' : 'rgba(123, 237, 159, 0.32)';
+      ctx.beginPath();
+      ctx.arc(0, 0, pk.r * 1.45, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.font = '26px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(pk.type === 'star' ? '⭐' : '🍵', 0, 0);
+      ctx.restore();
+    }
+  }
+
+  function drawDecoyPuppet(decoy) {
+    ctx.save();
+    ctx.translate(decoy.x, decoy.y);
+    const pulse = 1 + Math.sin(state.animTime * 12) * 0.08;
+    ctx.scale(pulse, pulse);
+
+    // Ripple ring attracting AI
+    ctx.strokeStyle = 'rgba(255, 190, 118, 0.75)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, 0, decoy.radius + (state.animTime * 40) % 28, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.fillStyle = '#f6b93b';
+    ctx.strokeStyle = '#4a2504';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, -10, 18, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.font = '800 13px "Baloo 2", sans-serif';
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center';
+    ctx.fillText('HÌNH NỘM', 0, 24);
+    ctx.restore();
+  }
+
+  // ==========================================
+  // 15. DRAGON BODY & CHIBI CHARACTERS RENDERING
+  // (Faithfully styled after the Concept Art!)
+  // ==========================================
+  function drawDragonBodyConnector() {
+    const nodes = [state.head, ...state.children];
+    if (nodes.length === 0) return;
+
+    ctx.save();
+    // Draw scalloped red-and-gold dragon costume segments linking the children
+    for (let i = nodes.length - 1; i >= 0; i--) {
+      const curr = nodes[i];
+      const next = i === 0 ? null : nodes[i - 1];
+
+      if (next) {
+        const mx = (curr.x + next.x) * 0.5;
+        const my = (curr.y + next.y) * 0.5;
+
+        // Festive dragon scale segment between each child
+        for (let s = 0; s <= 2; s++) {
+          const t = s / 3;
+          const sx = curr.x + (next.x - curr.x) * t;
+          const sy = curr.y + (next.y - curr.y) * t + 2;
+
+          ctx.fillStyle = s % 2 === 0 ? '#e62e25' : '#ffbe0b';
+          ctx.strokeStyle = '#4a1205';
+          ctx.lineWidth = 2.8;
+          ctx.beginPath();
+          ctx.arc(sx, sy, 15, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        }
+      }
+    }
+
+    // Festive Dragon Tail Fin behind the last member
+    const last = nodes[nodes.length - 1];
+    const tailAng = last.angle + Math.PI + Math.sin(state.animTime * 10) * 0.25;
+    const tx = last.x + Math.cos(tailAng) * 26;
+    const ty = last.y + Math.sin(tailAng) * 26;
+
+    ctx.fillStyle = '#ffbe0b';
+    ctx.strokeStyle = '#5c1906';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(tx, ty, 14, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#e62e25';
+    ctx.beginPath();
+    ctx.arc(tx + Math.cos(tailAng) * 10, ty + Math.sin(tailAng) * 10, 9, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  function drawChibiChild(ch, isLast) {
+    const bob = Math.sin(ch.bobPhase) * 3.5;
+    const legSwing = Math.sin(ch.bobPhase) * 7;
+    const facingLeft = Math.cos(ch.angle) < -0.1;
+
+    ctx.save();
+    ctx.translate(ch.x, ch.y);
+
+    // Shield Aura if active
+    if (state.head.shieldTime > 0) {
+      ctx.strokeStyle = 'rgba(126, 214, 223, 0.85)';
+      ctx.fillStyle = 'rgba(126, 214, 223, 0.18)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(0, -6, ch.radius + 9, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    // Highlight ring under the LAST child (Target of Thầy Thuốc)
+    if (isLast && state.mode === 'PLAYING') {
+      const pulse = 1 + Math.sin(state.animTime * 8) * 0.12;
+      ctx.strokeStyle = 'rgba(255, 90, 70, 0.8)';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.ellipse(0, 18, 22 * pulse, 10 * pulse, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // Ground shadow
+    ctx.fillStyle = 'rgba(35, 18, 4, 0.32)';
+    ctx.beginPath();
+    ctx.ellipse(0, 18, 17, 7.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (facingLeft) ctx.scale(-1, 1);
+
+    ctx.translate(0, bob);
+    ctx.strokeStyle = '#2d1404';
+    ctx.lineWidth = 2.8;
+
+    // Animated Running Legs
+    ctx.fillStyle = ch.palette.pants;
+    ctx.beginPath();
+    ctx.roundRect(-9 + legSwing * 0.5, 5, 7, 12, 3);
+    ctx.roundRect(2 - legSwing * 0.5, 5, 7, 12, 3);
+    ctx.fill();
+    ctx.stroke();
+
+    // Torso / Shirt (holding onto segment ahead)
+    ctx.fillStyle = ch.palette.shirt;
+    ctx.beginPath();
+    ctx.roundRect(-12, -10, 24, 18, 7);
+    ctx.fill();
+    ctx.stroke();
+
+    // Arms reaching forward to hold the person in front
+    ctx.fillStyle = ch.palette.shirt;
+    ctx.beginPath();
+    ctx.roundRect(4, -7, 13, 7, 3);
+    ctx.fill();
+    ctx.stroke();
+
+    // Chibi Head
+    ctx.fillStyle = '#ffe0bd';
+    ctx.beginPath();
+    ctx.arc(0, -24, 15.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Hair Cap & Distinctive Hairstyles (from concept image)
+    ctx.fillStyle = ch.palette.hair;
+    ctx.beginPath();
+    ctx.arc(0, -26, 16, Math.PI * 0.92, Math.PI * 2.08);
+    ctx.fill();
+    ctx.stroke();
+
+    if (ch.palette.style === 'bun_flower') {
+      ctx.beginPath();
+      ctx.arc(-10, -37, 6.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#ff78ae';
+      ctx.beginPath();
+      ctx.arc(-6, -33, 4, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (ch.palette.style === 'headband') {
+      ctx.strokeStyle = '#ffbe0b';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.arc(0, -26, 15, Math.PI * 1.15, Math.PI * 1.85);
+      ctx.stroke();
+      ctx.strokeStyle = '#2d1404';
+      ctx.lineWidth = 2.8;
+    } else if (ch.palette.style === 'pigtails') {
+      ctx.beginPath();
+      ctx.arc(-14, -27, 5.5, 0, Math.PI * 2);
+      ctx.arc(14, -27, 5.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    // Rosy cheeks
+    ctx.fillStyle = 'rgba(255, 115, 135, 0.55)';
+    ctx.beginPath();
+    ctx.arc(-7, -20, 3.2, 0, Math.PI * 2);
+    ctx.arc(8, -20, 3.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Eyes & Mouth Expression
+    ctx.fillStyle = '#1e1108';
+    if (ch.scared > 0) {
+      // Surprised / Scared expression when Doctor is right behind!
+      ctx.beginPath();
+      ctx.arc(-4, -23, 2.6, 0, Math.PI * 2);
+      ctx.arc(6, -23, 2.6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#d63031';
+      ctx.beginPath();
+      ctx.arc(1, -16, 3.2, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      // Cheerful running expression
+      ctx.beginPath();
+      ctx.arc(-4, -23, 2.3, 0, Math.PI * 2);
+      ctx.arc(6, -23, 2.3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#e84118';
+      ctx.beginPath();
+      ctx.arc(1, -17, 3.2, 0, Math.PI);
+      ctx.fill();
+    }
+
+    ctx.restore();
+  }
+
+  function drawDragonHeadLeader(head) {
+    const bob = Math.sin(state.animTime * (head.sprinting ? 16 : 10)) * 3.8;
+    const facingLeft = Math.cos(head.angle) < -0.1;
+
+    ctx.save();
+    ctx.translate(head.x, head.y);
+
+    // Shield Aura
+    if (head.shieldTime > 0) {
+      ctx.strokeStyle = 'rgba(126, 214, 223, 0.9)';
+      ctx.fillStyle = 'rgba(126, 214, 223, 0.22)';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.arc(0, -8, head.radius + 12, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    // Ground shadow
+    ctx.fillStyle = 'rgba(35, 18, 4, 0.36)';
+    ctx.beginPath();
+    ctx.ellipse(0, 21, 22, 9, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (facingLeft) ctx.scale(-1, 1);
+    ctx.translate(0, bob);
+
+    ctx.strokeStyle = '#2d1404';
+    ctx.lineWidth = 3;
+
+    // Leader Boy Running Legs
+    const legSwing = Math.sin(state.animTime * 14) * 8;
+    ctx.fillStyle = '#222f3e';
+    ctx.beginPath();
+    ctx.roundRect(-10 + legSwing * 0.5, 6, 8, 13, 3);
+    ctx.roundRect(2 - legSwing * 0.5, 6, 8, 13, 3);
+    ctx.fill();
+    ctx.stroke();
+
+    // Red & Gold Festive Tunic
+    ctx.fillStyle = '#e62e25';
+    ctx.beginPath();
+    ctx.roundRect(-14, -11, 28, 20, 8);
+    ctx.fill();
+    ctx.stroke();
+
+    // Gold sash
+    ctx.fillStyle = '#ffbe0b';
+    ctx.fillRect(-13, -2, 26, 5);
+
+    // Chibi Boy Face under the Dragon Mask
+    ctx.fillStyle = '#ffe0bd';
+    ctx.beginPath();
+    ctx.arc(0, -24, 15.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Eyes & spirited grin
+    ctx.fillStyle = '#1e1108';
+    ctx.beginPath();
+    ctx.arc(-3, -22, 2.5, 0, Math.PI * 2);
+    ctx.arc(7, -22, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#d62828';
+    ctx.beginPath();
+    ctx.arc(2, -16, 3.8, 0, Math.PI);
+    ctx.fill();
+
+    // ORNATE RED & GOLD DRAGON HEAD HOOD (Đầu Lân Rồng Đỏ Vàng)
+    // Golden Horns & Mane
+    ctx.fillStyle = '#ffbe0b';
+    ctx.beginPath();
+    ctx.moveTo(-12, -36);
+    ctx.quadraticCurveTo(-24, -52, -8, -50);
+    ctx.quadraticCurveTo(-2, -48, -4, -38);
+    ctx.fill();
+    ctx.stroke();
+
+    // Crimson Dragon Crest
+    ctx.fillStyle = '#e62e25';
+    ctx.beginPath();
+    ctx.arc(0, -35, 19, Math.PI * 0.85, Math.PI * 2.15);
+    ctx.fill();
+    ctx.stroke();
+
+    // Golden Brow & Snout Trim
+    ctx.fillStyle = '#ffdd3c';
+    ctx.beginPath();
+    ctx.roundRect(-18, -36, 36, 8, 4);
+    ctx.fill();
+    ctx.stroke();
+
+    // Big Expressive Green/Gold Dragon Eye on the Mask
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(6, -39, 6.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#10ac84';
+    ctx.beginPath();
+    ctx.arc(7, -39, 3.6, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  function drawDoctorCharacter(doc) {
+    const isMoving = doc.aiState !== 'RECOVER';
+    const bob = isMoving ? Math.sin(state.animTime * 13) * 4 : 0;
+    const facingLeft = Math.cos(doc.angle) < -0.1;
+
+    ctx.save();
+    ctx.translate(doc.x, doc.y);
+
+    // Shadow
+    ctx.fillStyle = 'rgba(35, 18, 4, 0.36)';
+    ctx.beginPath();
+    ctx.ellipse(0, 21, 20, 8.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (facingLeft) ctx.scale(-1, 1);
+    ctx.translate(0, bob);
+
+    ctx.strokeStyle = '#261103';
+    ctx.lineWidth = 3;
+
+    // Running Legs
+    const legSwing = isMoving ? Math.sin(state.animTime * 13) * 8 : 0;
+    ctx.fillStyle = '#3d2514';
+    ctx.beginPath();
+    ctx.roundRect(-10 + legSwing * 0.5, 5, 8, 13, 3);
+    ctx.roundRect(2 - legSwing * 0.5, 5, 8, 13, 3);
+    ctx.fill();
+    ctx.stroke();
+
+    // Traditional Brown Áo Bà Ba (matching the Thầy Thuốc in concept art!)
+    ctx.fillStyle = '#7d4e2d';
+    ctx.beginPath();
+    ctx.roundRect(-14, -12, 28, 20, 7);
+    ctx.fill();
+    ctx.stroke();
+
+    // Darker sash belt
+    ctx.fillStyle = '#4a2c18';
+    ctx.fillRect(-13, -2, 26, 4);
+
+    // Arms reaching out to catch
+    ctx.fillStyle = '#7d4e2d';
+    ctx.beginPath();
+    ctx.roundRect(5, -9, 13, 7, 3);
+    ctx.fill();
+    ctx.stroke();
+
+    // Chibi Head
+    ctx.fillStyle = '#fbd2a6';
+    ctx.beginPath();
+    ctx.arc(0, -25, 16, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Hair & Dark Cloth Headband (Khăn vấn đầu)
+    ctx.fillStyle = '#241710';
+    ctx.beginPath();
+    ctx.arc(0, -28, 16.5, Math.PI * 0.9, Math.PI * 2.1);
+    ctx.fill();
+    ctx.stroke();
+
+    // Headband ribbon
+    ctx.fillStyle = '#3b2b23';
+    ctx.beginPath();
+    ctx.roundRect(-17, -33, 34, 7, 3);
+    ctx.fill();
+    ctx.stroke();
+
+    // Determined / Dizzy Eyes
+    ctx.fillStyle = '#1e1108';
+    if (doc.aiState === 'RECOVER') {
+      // Dizzy stars above head when stunned/recovering
+      ctx.font = '16px sans-serif';
+      ctx.fillText('💫', -8, -46);
+    }
+
+    // Determined eyebrows
+    ctx.strokeStyle = '#1e1108';
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.moveTo(-7, -26);
+    ctx.lineTo(-1, -24);
+    ctx.moveTo(9, -26);
+    ctx.lineTo(3, -24);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(-4, -22, 2.4, 0, Math.PI * 2);
+    ctx.arc(6, -22, 2.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Fierce/Playful mouth
+    ctx.fillStyle = '#c0392b';
+    ctx.beginPath();
+    ctx.roundRect(-1, -17, 6, 3.5, 1.5);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  // ==========================================
+  // 16. UI EVENT LISTENERS & MODAL BINDINGS
+  // ==========================================
+  function closeAllModals() {
+    document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('open'));
+  }
+
+  function togglePause(pauseState) {
+    sfx.playClick();
+    if (pauseState && state.mode === 'PLAYING') {
+      state.mode = 'PAUSED';
+      document.getElementById('modal-pause').classList.add('open');
+    } else if (!pauseState && state.mode === 'PAUSED') {
+      state.mode = 'PLAYING';
+      document.getElementById('modal-pause').classList.remove('open');
+    }
+  }
+
+  // Home Menu Buttons
+  document.getElementById('btn-start-game').addEventListener('click', startNewGame);
+
+  document.getElementById('btn-open-guide').addEventListener('click', () => {
+    sfx.playClick();
+    document.getElementById('modal-guide').classList.add('open');
+  });
+
+  document.getElementById('btn-open-settings').addEventListener('click', () => {
+    sfx.playClick();
+    document.getElementById('modal-settings').classList.add('open');
+  });
+
+  document.getElementById('btn-open-leaderboard').addEventListener('click', () => {
+    sfx.playClick();
+    renderLeaderboard();
+    document.getElementById('modal-leaderboard').classList.add('open');
+  });
+
+  // Close buttons on modals
+  document.querySelectorAll('[data-close]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      sfx.playClick();
+      const targetId = btn.getAttribute('data-close');
+      document.getElementById(targetId).classList.remove('open');
+    });
+  });
+
+  // Map Selector Chips on Home Screen
+  document.querySelectorAll('.map-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      sfx.playClick();
+      document.querySelectorAll('.map-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      state.selectedMap = Number(chip.getAttribute('data-map')) || 0;
+      document.getElementById('setting-map-select').value = String(state.selectedMap);
+    });
+  });
+
+  // Settings Controls
+  const btnSound = document.getElementById('toggle-sound-btn');
+  btnSound.addEventListener('click', () => {
+    sfx.enabled = !sfx.enabled;
+    btnSound.textContent = sfx.enabled ? 'BẬT' : 'TẮT';
+    if (sfx.enabled) sfx.playClick();
+  });
+
+  const btnShake = document.getElementById('toggle-shake-btn');
+  btnShake.addEventListener('click', () => {
+    sfx.playClick();
+    state.shakeEnabled = !state.shakeEnabled;
+    btnShake.textContent = state.shakeEnabled ? 'BẬT' : 'TẮT';
+  });
+
+  document.getElementById('setting-map-select').addEventListener('change', (e) => {
+    state.selectedMap = Number(e.target.value) || 0;
+    document.querySelectorAll('.map-chip').forEach(c => {
+      c.classList.toggle('active', Number(c.getAttribute('data-map')) === state.selectedMap);
+    });
+  });
+
+  document.getElementById('setting-diff-select').addEventListener('change', (e) => {
+    state.difficultyMult = parseFloat(e.target.value) || 1.0;
+  });
+
+  document.getElementById('btn-clear-scores').addEventListener('click', () => {
+    sfx.playClick();
+    try { localStorage.removeItem('rrlm_leaderboard_v1'); } catch (e) {}
+    renderLeaderboard();
+  });
+
+  // Pause & End Screen Buttons
+  document.getElementById('btn-pause-hud').addEventListener('click', () => {
+    if (state.mode === 'PLAYING') togglePause(true);
+    else if (state.mode === 'PAUSED') togglePause(false);
+  });
+
+  document.getElementById('btn-resume-game').addEventListener('click', () => togglePause(false));
+  document.getElementById('btn-restart-pause').addEventListener('click', startNewGame);
+  document.getElementById('btn-home-pause').addEventListener('click', returnToHome);
+  document.getElementById('btn-play-again').addEventListener('click', startNewGame);
+  document.getElementById('btn-end-home').addEventListener('click', returnToHome);
+
+  // Skill Dock Clicks
+  document.getElementById('skill-btn-dash').addEventListener('click', () => triggerSkill('dash'));
+  document.getElementById('skill-btn-decoy').addEventListener('click', () => triggerSkill('decoy'));
+  document.getElementById('skill-btn-shield').addEventListener('click', () => triggerSkill('shield'));
+  document.getElementById('skill-btn-stamina').addEventListener('click', () => triggerSkill('stamina'));
+
+  // ==========================================
+  // 17. BOOTSTRAP & ANIMATION LOOP
+  // ==========================================
+  createDragonChain(4);
+  resetDoctor();
+  updateHUD();
+
+  let lastTime = performance.now();
+  function gameLoop(now) {
+    const dt = Math.min(0.05, (now - lastTime) / 1000);
+    lastTime = now;
+
+    updateGame(dt);
+    renderScene();
+
+    requestAnimationFrame(gameLoop);
+  }
+
+  window.onload = () => {
+    resizeCanvas();
+    requestAnimationFrame(gameLoop);
+  };
+})();
+</script>
+</body>
+</html>
