@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Quản trị - GameHub{% endblock %}
+{% block title %}Quản trị - {{ site.name }}{% endblock %}
 {% block head %}
 <style>
 .two{display:grid;grid-template-columns:1fr 1fr;gap:18px}
@@ -88,6 +88,28 @@ select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #333a6b;
       <button class="btn">{% if edit %}Lưu thay đổi{% else %}Thêm game{% endif %}</button>
       {% if edit %}<a class="btn ghost" href="{{ url_for('admin') }}">Hủy</a>{% endif %}
     </p>
+  </form>
+</div>
+
+<div class="panel">
+  <h2>🖼 Tên & logo website</h2>
+  <form method="post" action="{{ url_for('save_site') }}" enctype="multipart/form-data">
+    <input type="hidden" name="csrf" value="{{ csrf() }}">
+    <div class="two">
+      <div>
+        <label>Tên website (hiện ở góc trái trên cùng và trên tab trình duyệt)</label>
+        <input name="site_name" maxlength="40" value="{{ site.name }}">
+      </div>
+      <div>
+        <label>Logo website — ảnh vuông 1:1, khuyên dùng 512×512 (bỏ trống để giữ logo cũ)</label>
+        <input type="file" name="site_logo" accept="image/*">
+        {% if site.logo %}
+        <div class="hint">Hiện tại: <img src="{{ url_for('img', name=site.logo) }}" style="height:36px;width:36px;object-fit:cover;vertical-align:middle;border-radius:8px"></div>
+        <label class="chk"><input type="checkbox" name="remove_logo" value="1"> Xóa logo (dùng chữ cái đầu của tên thay thế)</label>
+        {% endif %}
+      </div>
+    </div>
+    <p style="margin-bottom:0"><button class="btn">Lưu tên & logo</button></p>
   </form>
 </div>
 

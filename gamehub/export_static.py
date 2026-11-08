@@ -1,4 +1,4 @@
-"""Xuất GameHub thành web tĩnh để đưa lên Netlify (hoặc bất kỳ hosting tĩnh nào).
+"""Xuất 2CC thành web tĩnh để đưa lên Netlify (hoặc bất kỳ hosting tĩnh nào).
 
 Cách dùng (trong thư mục gamehub):
     python export_static.py
@@ -68,6 +68,12 @@ def main():
                         os.makedirs(os.path.join(OUT, "img"), exist_ok=True)
                         shutil.copyfile(s, os.path.join(OUT, "img", g[key]))
             done += 1
+
+        # logo website (nếu có)
+        logo = A.site_info()["logo"]
+        if logo and os.path.exists(os.path.join(A.IMGS, logo)):
+            os.makedirs(os.path.join(OUT, "img"), exist_ok=True)
+            shutil.copyfile(os.path.join(A.IMGS, logo), os.path.join(OUT, "img", logo))
 
     # Game chạy trong sandbox, tách khỏi trang chính
     write("_headers",

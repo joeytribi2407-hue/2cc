@@ -1,6 +1,6 @@
-# GameHub – Hướng dẫn thêm game
+# 2CC – Hướng dẫn thêm game
 
-GameHub gồm **2 phần**:
+Website gồm **2 phần**:
 
 | Phần | Chạy ở đâu | Dùng để làm gì |
 |---|---|---|
@@ -56,6 +56,14 @@ Chi tiết từng bước ở dưới.
 - Game chạy trong khung cách ly (sandbox) để an toàn, nên **`localStorage` / cookie có thể không dùng được**.
   Game lưu điểm bằng `localStorage` nên bọc trong `try { ... } catch (e) {}` để không bị lỗi.
 - Game chỉ dùng file `.html` đơn lẻ. Ảnh / âm thanh nên nhúng thẳng vào file (base64) hoặc dùng đường dẫn tuyệt đối trên mạng.
+
+---
+
+## 2b. Đổi tên và logo website
+
+Ở trang Quản trị có mục **🖼 Tên & logo website**: đổi tên (mặc định là **2CC**) và tải **logo vuông 1:1** (khuyên dùng 512×512).
+Logo hiện ở góc trái trên cùng, cạnh tên website, và cũng là biểu tượng trên tab trình duyệt. Chưa có logo thì hiện chữ cái đầu của tên.
+Sau khi đổi, nhớ chạy `capnhat.bat` để web công khai cập nhật theo.
 
 ---
 

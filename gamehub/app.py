@@ -101,6 +101,13 @@ def get_setting(k):
     return r["value"] if r else None
 
 
+def site_info():
+    """Tên + logo website (đặt trong Quản trị). Mặc định tên là 2CC."""
+    r = {k: v for k, v in db().execute(
+        "SELECT key, value FROM settings WHERE key IN ('site_name','site_logo')")}
+    return {"name": r.get("site_name") or "2CC", "logo": r.get("site_logo") or ""}
+
+
 app.jinja_env.filters["glist"] = lambda s: [x for x in (s or "").split(",") if x]
 
 
@@ -137,7 +144,7 @@ def admin_required(f):
 
 @app.context_processor
 def inject():
-    return {"is_admin": bool(session.get("admin"))}
+    return {"is_admin": bool(session.get("admin")), "site": site_info()}
 
 
 # ---------- image helpers ----------
@@ -173,6 +180,12 @@ def build_zip():
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
         z.writestr("games.json", json.dumps(rows, ensure_ascii=False, indent=2))
+        site = site_info()
+        z.writestr("site.json", json.dumps(site, ensure_ascii=False))
+        if site["logo"]:
+            p = os.path.join(IMGS, site["logo"])
+            if os.path.exists(p):
+                z.write(p, "images/" + site["logo"])
         for r in rows:
             p = os.path.join(GAMES, r["id"] + ".html")
             if os.path.exists(p):
@@ -464,6 +477,14 @@ def backup_restore():
             out.write(z.read("images/" + name))
         return name
 
+    if "site.json" in names:
+        try:
+            s = json.loads(z.read("site.json").decode("utf-8"))
+            db().execute("INSERT OR REPLACE INTO settings VALUES('site_name',?)", (str(s.get("name") or "2CC")[:40],))
+            db().execute("INSERT OR REPLACE INTO settings VALUES('site_logo',?)", (restore_img(s.get("logo")),))
+        except Exception:
+            pass
+
     n = 0
     for r in rows:
         gid = str(r.get("id", ""))
@@ -493,6 +514,29 @@ def backup_restore():
         n += 1
     db().commit()
     flash("Đã khôi phục %d game." % n, "ok")
+    return redirect(url_for("admin"))
+
+
+@app.post("/admin/site")
+@admin_required
+def save_site():
+    name = request.form.get("site_name", "").strip()[:40] or "2CC"
+    f = request.files.get("site_logo")
+    if bad_image(f):
+        flash("Logo phải là png, jpg, gif hoặc webp.", "err")
+        return redirect(url_for("admin"))
+    logo = get_setting("site_logo") or ""
+    if request.form.get("remove_logo") and logo:
+        p = os.path.join(IMGS, logo)
+        if os.path.exists(p):
+            os.remove(p)
+        logo = ""
+    logo = store_image(f, logo)
+    db().execute("INSERT OR REPLACE INTO settings VALUES('site_name',?)", (name,))
+    db().execute("INSERT OR REPLACE INTO settings VALUES('site_logo',?)", (logo,))
+    db().commit()
+    auto_backup()
+    flash("Đã lưu tên và logo website.", "ok")
     return redirect(url_for("admin"))
 
 
