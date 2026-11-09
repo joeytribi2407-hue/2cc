@@ -247,38 +247,22 @@
         </div>
     </div>
 
-    <!-- Start / Intro Modal -->
-    <div id="modal-start" class="absolute inset-0 z-30 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-amber-50 border-4 border-black rounded-3xl max-w-lg w-full p-6 text-center shadow-[0_12px_0_#000] relative">
-            <div class="inline-block bg-red-600 text-yellow-300 border-2 border-black px-3 py-0.5 rounded-full text-xs font-extrabold uppercase mb-2">
-                Game Vật Lý Ức Chế Đậm Chất Việt Nam
-            </div>
-            <h1 class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-none mb-2">
-                VUA ĐỖ XE HẺM NHỎ
+    <!-- Start / Intro Modal (Tinh gọn: Chỉ hiển thị Tên Game, Nút Chế độ Màn hình & Nút Nổ Máy Giao Hàng) -->
+    <div id="modal-start" class="absolute inset-0 z-30 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-amber-50 border-4 border-black rounded-3xl max-w-sm w-full p-6 text-center shadow-[0_10px_0_#000] relative">
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-tight mb-1">
+                🛵 VUA ĐỖ XE HẺM NHỎ
             </h1>
-            <p class="text-sm font-bold text-amber-700 mb-4">(Alleyway Ninja: Tháp Hàng Bất Ổn)</p>
+            <p class="text-xs sm:text-sm font-extrabold text-amber-700 tracking-wider uppercase mb-6">
+                ALLEYWAY NINJA
+            </p>
 
-            <div class="bg-white border-2 border-slate-800 rounded-2xl p-3.5 text-left text-xs sm:text-sm space-y-2 mb-5 text-slate-800">
-                <p>🛵 <b>Nhiệm vụ:</b> Chở tháp hàng cồng kềnh (Tủ lạnh, Bình gas hồng, Lồng gà, Cây cảnh) vượt <b>100m hẻm nhỏ</b> để kịp giao đơn 5 sao!</p>
-                <p>⚖️ <b>Điều khiển ragdoll:</b></p>
-                <ul class="list-disc list-inside space-y-1 font-semibold text-slate-700">
-                    <li><b>Chuột Trái / Phím A / ⬅️:</b> Nghiêng người sang trái & ghìm phanh lùi nhẹ.</li>
-                    <li><b>Chuột Phải / Phím D / ➡️:</b> Rướn xe vặn ga tiến lên & dồn trọng tâm sang phải.</li>
-                    <li><b>Space / W / Click Giữa:</b> Cúi rạp đầu né dây điện, quần áo phơi hoặc nhún qua ổ gà.</li>
-                </ul>
-                <p class="text-emerald-700 font-bold">🚩 <b>Mốc Checkpoint & Meme Tường 10m:</b> Qua mỗi vạch <b>10m, 20m... 100m</b> sẽ được lưu mốc hồi sinh và chiêm ngưỡng bức tường Meme huyền thoại mờ mờ!</p>
-                <p class="text-purple-700 font-bold">🔥 <b>Sau mốc 30m (Hẻm Sâu):</b> Xuất hiện Dép tổ ong rơi từ ban công, Xe cá viên chiên ngược chiều, Ống nước vỡ, Quạt công nghiệp & Loa kẹo kéo dập bass!</p>
-                <p class="text-red-600 font-bold">💥 Coi chừng: Bà hàng xóm đẩy ghế nhựa, Cậu Vàng lao ra táp lốp, bóng nhựa trẻ con sút ngang và dây điện thòng thấp!</p>
-            </div>
+            <button id="btn-start-orientation" class="w-full bg-indigo-600 hover:bg-indigo-500 active:translate-y-0.5 text-white border-2 border-black py-3 px-4 rounded-2xl text-sm sm:text-base font-extrabold shadow-[0_3px_0_#000] flex items-center justify-center gap-1.5 mb-3.5 transition-all">
+                🔄 Chế độ màn hình: <span id="start-orientation-text" class="text-yellow-300">Ngang ↔️</span>
+            </button>
 
-            <div class="flex flex-col sm:flex-row gap-2.5 mb-3">
-                <button id="btn-start-orientation" class="bg-indigo-600 hover:bg-indigo-500 text-white border-2 border-black py-2.5 px-4 rounded-2xl text-sm font-extrabold shadow-[0_3px_0_#000] flex items-center justify-center gap-1.5">
-                    🔄 Chế độ màn hình: <span id="start-orientation-text" class="text-yellow-300">Tự động</span>
-                </button>
-            </div>
-
-            <button id="btn-start" class="btn-game w-full py-3.5 rounded-2xl text-xl font-extrabold text-black uppercase tracking-wide">
-                🛵 Nổ Máy Giao Hàng Ngay!
+            <button id="btn-start" class="btn-game w-full py-3.5 rounded-2xl text-lg sm:text-xl font-extrabold text-black uppercase tracking-wide">
+                🛵 NỔ MÁY GIAO HÀNG!
             </button>
         </div>
     </div>
@@ -623,10 +607,9 @@ function saveBestDistance(meters) {
 function updateOrientationUI() {
     const labelEl = document.getElementById('orientation-label');
     const startTextEl = document.getElementById('start-orientation-text');
-    let text = 'Tự động';
+    let text = isPortraitLayout ? 'Dọc ↕️' : 'Ngang ↔️';
     if (orientationMode === 'LANDSCAPE') text = 'Ngang ↔️';
     else if (orientationMode === 'PORTRAIT') text = 'Dọc ↕️';
-    else text = isPortraitLayout ? 'Dọc (Auto)' : 'Ngang (Auto)';
 
     if (labelEl) labelEl.textContent = text;
     if (startTextEl) startTextEl.textContent = text;
