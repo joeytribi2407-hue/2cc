@@ -145,4 +145,5 @@ Trong Netlify: **Domain management → thêm tên miền**. Rồi ở nơi quả
 | A | `@` | `75.2.60.5` (theo tài liệu Netlify) |
 
 Netlify khuyên dùng `www.tenmien` làm địa chỉ chính khi dùng DNS bên ngoài. Bản ghi có thể mất đến một ngày để có hiệu lực.
-admin123
+admin
+Admin@123
