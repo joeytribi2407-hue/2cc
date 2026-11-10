@@ -1,0 +1,1567 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Thợ Điện Leo Cột: Tháp Vô Tận 500M</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700;800;900&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #04070f;
+            font-family: 'Be Vietnam Pro', sans-serif;
+            color: #f8fafc;
+        }
+        .font-mono-tech {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        #stageWrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            margin: 0 auto;
+            overflow: hidden;
+            background: #070b14;
+            transition: max-width 0.25s ease;
+        }
+        #stageWrapper.portrait-frame {
+            max-width: 500px;
+            border-left: 2px solid rgba(148, 163, 184, 0.22);
+            border-right: 2px solid rgba(148, 163, 184, 0.22);
+            box-shadow: 0 0 60px rgba(0, 0, 0, 0.9);
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+        .hud-glass {
+            background: rgba(10, 15, 29, 0.88);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(148, 163, 184, 0.22);
+        }
+        .btn-left-hand {
+            background: linear-gradient(180deg, #00e5ff 0%, #0284c7 100%);
+            box-shadow: 0 5px 0 #0369a1, 0 8px 18px rgba(0, 229, 255, 0.35);
+            transition: transform 0.04s ease, box-shadow 0.04s ease;
+        }
+        .btn-left-hand:active, .btn-left-hand.holding {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #0369a1, 0 3px 8px rgba(0, 229, 255, 0.25);
+        }
+        .btn-right-hand {
+            background: linear-gradient(180deg, #ff9100 0%, #ea580c 100%);
+            box-shadow: 0 5px 0 #9a3412, 0 8px 18px rgba(255, 145, 0, 0.35);
+            transition: transform 0.04s ease, box-shadow 0.04s ease;
+        }
+        .btn-right-hand:active, .btn-right-hand.holding {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #9a3412, 0 3px 8px rgba(255, 145, 0, 0.25);
+        }
+        .btn-reverse {
+            background: linear-gradient(180deg, #facc15 0%, #ca8a04 100%);
+            box-shadow: 0 4px 0 #854d0e, 0 6px 14px rgba(250, 204, 21, 0.3);
+            transition: transform 0.04s ease, box-shadow 0.04s ease;
+        }
+        .btn-reverse:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #854d0e;
+        }
+    </style>
+</head>
+<body>
+    <div id="stageWrapper">
+        <!-- HIGH-DPI 2D GAME CANVAS -->
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- TOP COMPACT HUD BAR -->
+        <div class="absolute top-2 left-2 right-2 z-20 flex flex-wrap items-center justify-between gap-1.5 pointer-events-none">
+            <!-- Altitude & Checkpoint Status -->
+            <div class="hud-glass rounded-xl px-3 py-1.5 flex items-center gap-3 pointer-events-auto shadow-lg">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-mono-tech font-extrabold px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-400 border border-rose-500/30">HARDCORE 500M</span>
+                        <span class="text-xs sm:text-sm font-mono-tech font-black text-white">
+                            ĐỘ CAO: <span id="uiHeight" class="text-cyan-300">0.0M</span> <span class="text-slate-500">/ 500M</span>
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-3 text-[10px] font-mono-tech text-slate-300 mt-0.5">
+                        <span>🏁 TRẠM LƯU: <strong id="uiCheckpoint" class="text-emerald-400">0M</strong></span>
+                        <span>💥 RƠI: <strong id="uiFalls" class="text-rose-400">0</strong></span>
+                        <span>🏆 ĐỈNH: <strong id="uiBestHeight" class="text-amber-300">0.0M</strong></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Utility Action Buttons -->
+            <div class="hud-glass rounded-xl p-1 flex items-center gap-1 pointer-events-auto shadow-lg">
+                <button id="btnRespawnCheckpoint" class="px-2 py-1 rounded-lg text-[11px] font-extrabold bg-emerald-950/90 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/40 transition" title="Về Trạm Lưu gần nhất (Phím R)">
+                    ⚡ Về Trạm [R]
+                </button>
+                <button id="btnToggleSound" class="w-7 h-7 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 flex items-center justify-center transition" title="Bật / Tắt Hiệu Ứng Âm Thanh">
+                    🔊
+                </button>
+                <button id="btnToggleAspect" class="px-2 py-1 rounded-lg text-[11px] font-bold bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700 transition" title="Chuyển khung hình Dọc / Ngang">
+                    📱 <span id="lblAspect">Ngang</span>
+                </button>
+                <button id="btnToggleHelp" class="w-7 h-7 rounded-full text-xs font-black bg-amber-400 hover:bg-amber-300 text-slate-950 border-2 border-amber-100 shadow-md flex items-center justify-center transition" title="Xem Hướng Dẫn Cách Chơi (Phím H / ?)">
+                    ?
+                </button>
+            </div>
+        </div>
+
+        <!-- FLOATING '?' HELP BUTTON ON THE RIGHT (BELOW TOP BAR) & HOW-TO-PLAY POPOVER -->
+        <div id="helpModal" class="absolute inset-0 z-30 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
+            <div class="hud-glass max-w-md w-full rounded-3xl border-2 border-cyan-400/70 p-5 shadow-2xl text-left relative">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-2.5 mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-full bg-amber-400 text-slate-950 font-black text-xs flex items-center justify-center">?</span>
+                        <h3 class="text-base font-black text-white tracking-tight">CÁCH CHƠI & BÍ KÍP LEO 500M</h3>
+                    </div>
+                    <span class="text-[10px] font-mono-tech font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">⏸ ĐÃ TẠM DỪNG</span>
+                </div>
+
+                <div class="space-y-2.5 text-xs text-slate-200">
+                    <div class="flex items-start gap-2.5 bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+                        <span class="text-base">🧤</span>
+                        <div>
+                            <div class="font-extrabold text-cyan-300">[A / ←] Tay Trái &nbsp;|&nbsp; [D / →] Tay Phải</div>
+                            <div class="text-[11px] text-slate-300 mt-0.5">Khi bàn tay đang quay chạm đúng vào <strong>vòng tròn tâm mấu tiếp theo</strong>, bấm phím của tay đó để chụp.</div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-2.5 bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+                        <span class="text-base">🔄</span>
+                        <div>
+                            <div class="font-extrabold text-amber-300">[W / Space / ↑] hoặc Nút ĐỔI CHIỀU</div>
+                            <div class="text-[11px] text-slate-300 mt-0.5">Đảo ngược chiều quay ngay lập tức để <strong>né cục điện chắn góc</strong> và đón điểm rơi nhanh hơn.</div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-2.5 bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+                        <span class="text-base">🎯</span>
+                        <div>
+                            <div class="font-extrabold text-emerald-300">Góc Vàng 45° & Sai Số 0.2 Giây</div>
+                            <div class="text-[11px] text-slate-300 mt-0.5">Mọi mấu đều nằm chuẩn trên quỹ đạo góc 45°. Bấm khi tay chưa vào vòng xanh = <strong>Tuột tay rơi tự do!</strong></div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-2.5 bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+                        <span class="text-base">⏱️</span>
+                        <div>
+                            <div class="font-extrabold text-rose-400">Đồng Hồ Mỏi Tay & Trạm Lưu 50M</div>
+                            <div class="text-[11px] text-slate-300 mt-0.5">Chốt thường giữ được <strong>3.2s</strong>, <strong class="text-orange-300">Chốt Đỏ Rỉ Sét 1.4s</strong>, <strong class="text-purple-300">Chốt Tím Nhớt quay nhanh 1.6x</strong>. Cứ mỗi <strong>50M</strong> có Trạm Lưu được nghỉ vô hạn & làm mốc hồi sinh!</div>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="btnCloseHelp" class="mt-4 w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-400 to-emerald-400 hover: opacity-95 text-slate-950 font-black text-xs shadow-lg transition">
+                    ⚡ ĐÃ HIỂU - TIẾP TỤC LEO!
+                </button>
+            </div>
+        </div>
+
+        <!-- ZONE BANNER & TIMING WARNING PILL -->
+        <div class="absolute top-16 left-1/2 -translate-x-1/2 z-10 pointer-events-none w-max max-w-[92%]">
+            <div id="uiLiveStatus" class="hud-glass px-3.5 py-1 rounded-full text-[11px] font-extrabold text-amber-300 border border-amber-400/40 shadow-md text-center">
+                ⚡ Canh đúng tâm mấu 24px (Góc 45°) để chụp! Lệch 0.2s là TUỘT TAY rơi về Trạm 50M!
+            </div>
+        </div>
+
+        <!-- RIGHT-SIDE VERTICAL 500M TOWER PROGRESS METER -->
+        <div class="absolute right-2.5 top-28 bottom-24 w-6 hud-glass rounded-full p-1 z-10 pointer-events-none flex flex-col justify-between items-center">
+            <span class="text-[8px] font-mono-tech font-black text-amber-400">500</span>
+            <div class="relative w-1.5 flex-1 my-1 bg-slate-800 rounded-full overflow- visible">
+                <!-- Progress fill -->
+                <div id="uiTowerFill" class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-emerald-500 via-cyan-400 to-amber-400 rounded-full transition-all duration-150" style="height: 0%;"></div>
+                <!-- Checkpoint marker dot -->
+                <div id="uiCheckpointDot" class="absolute left-1/2 -translate-x-1/2 w-3 h-1 bg-emerald-400 rounded-sm shadow" style="bottom: 0%;"></div>
+                <!-- Player marker dot -->
+                <div id="uiPlayerDot" class="absolute left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white border-2 border-cyan-400 shadow-md transition-all duration-75" style="bottom: 0%;"></div>
+            </div>
+            <span class="text-[8px] font-mono-tech font-bold text-slate-400">0M</span>
+        </div>
+
+        <!-- BOTTOM COMPACT CONTROLS (LEFT HAND / REVERSE SPIN / RIGHT HAND) -->
+        <div class="absolute bottom-3 left-2 right-2 z-20 flex items-end justify-between gap-2 pointer-events-none max-w-3xl mx-auto">
+            <!-- Left Hand Button -->
+            <button id="btnLeftHand" class="btn-left-hand pointer-events-auto w-32 sm:w-44 h-14 sm:h-16 rounded-2xl border-2 border-cyan-100 flex flex-col items-center justify-center text-slate-950 font-black shadow-xl">
+                <span class="text-sm sm:text-base tracking-tight">🧤 TAY TRÁI</span>
+                <span class="text-[10px] font-mono-tech bg-slate-950/80 text-cyan-200 px-2 py-0.5 rounded mt-0.5" id="lblLeftState">ĐANG TRỤ [A / ←]</span>
+            </button>
+
+            <!-- Center Reverse Swing Button -->
+            <button id="btnReverseDir" class="btn-reverse pointer-events-auto px-3.5 sm:px-5 h-12 sm:h-14 rounded-2xl border-2 border-amber-100 text-slate-950 font-black flex flex-col items-center justify-center shadow-xl">
+                <span class="text-xs sm:text-sm tracking-tight">🔄 ĐỔI CHIỀU</span>
+                <span class="text-[9px] font-mono-tech bg-slate-950/75 text-amber-200 px-1.5 py-0.5 rounded mt-0.5">[W / SPACE / ↑]</span>
+            </button>
+
+            <!-- Right Hand Button -->
+            <button id="btnRightHand" class="btn-right-hand pointer-events-auto w-32 sm:w-44 h-14 sm:h-16 rounded-2xl border-2 border-orange-100 flex flex-col items-center justify-center text-slate-950 font-black shadow-xl">
+                <span class="text-sm sm:text-base tracking-tight">TAY PHẢI 🧤</span>
+                <span class="text-[10px] font-mono-tech bg-slate-950/80 text-orange-200 px-2 py-0.5 rounded mt-0.5" id="lblRightState">BẤM CHỤP [D / →]</span>
+            </button>
+        </div>
+
+        <!-- 500M SUMMIT VICTORY MODAL (HIDDEN UNTIL 500M REACHED) -->
+        <div id="victoryModal" class="absolute inset-0 z-30 bg-slate-950/85 backdrop-blur-md hidden items-center justify-center p-4">
+            <div class="hud-glass max-w-sm w-full rounded-3xl border-2 border-amber-400 p-6 text-center shadow-2xl">
+                <div class="text-5xl mb-2">⚡🏆⚡</div>
+                <div class="text-xs font-mono-tech font-extrabold text-emerald-400 uppercase tracking-widest">ĐÃ LÊN ĐỈNH 500.0M / 500M!</div>
+                <h2 class="text-2xl font-black text-white mt-1">THÁNH THỢ ĐIỆN 500kV!</h2>
+                <p class="text-xs text-slate-300 mt-1">Bạn đã chinh phục trọn vẹn 200 mấu chốt tử thần của Tháp Cao Thế 500M!</p>
+
+                <div class="grid grid-cols-2 gap-2 my-4 bg-slate-900/90 p-3 rounded-2xl border border-slate-800">
+                    <div>
+                        <div class="text-[10px] text-slate-400 font-bold">TỔNG SỐ LẦN RƠI</div>
+                        <div id="vicTotalFalls" class="text-lg font-mono-tech font-black text-rose-400">0</div>
+                    </div>
+                    <div>
+                        <div class="text-[10px] text-slate-400 font-bold">ĐỘ CAO ĐẠT ĐƯỢC</div>
+                        <div class="text-lg font-mono-tech font-black text-amber-300">500.0M</div>
+                    </div>
+                </div>
+
+                <button id="btnRestartFullTower" class="w-full py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-sm shadow-lg transition">
+                    🔄 Leo Lại Từ Chân Tháp (0M)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**************************************************************************
+         * THỢ ĐIỆN LEO CỘT: THÁP VÔ TẬN 500M (HARDCORE EDITION)
+         * - 1 Continuous 500m Mega-Tower (200 deterministic pegs, 2.5m per peg)
+         * - Checkpoint Transformer Stations every 50m (every 20th peg)
+         * - Strict 24px grab radius (0.2s timing window) + Grip Fatigue Timer
+         * - One-way Electric Blocker Orbs requiring Reverse Swing [W / Space]
+         **************************************************************************/
+
+        // --- 1. PROCEDURAL WEB AUDIO ENGINE (SFX ONLY) ---
+        const Sound = {
+            ctx: null,
+            enabled: true,
+
+            init() {
+                try {
+                    if (!this.ctx) {
+                        const AC = window.AudioContext || window.webkitAudioContext;
+                        if (AC) this.ctx = new AC();
+                    }
+                    if (this.ctx && this.ctx.state === 'suspended') {
+                        this.ctx.resume();
+                    }
+                } catch (e) {}
+            },
+            play(freq1, freq2, dur, type = 'sine', vol = 0.16) {
+                if (!this.enabled) return;
+                try {
+                    this.init();
+                    if (!this.ctx) return;
+                    const now = this.ctx.currentTime;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq1, now);
+                    osc.frequency.exponentialRampToValueAtTime(Math.max(25, freq2), now + dur);
+                    gain.gain.setValueAtTime(vol, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + dur);
+                } catch (e) {}
+            },
+            grab(perfect45) {
+                this.play(perfect45 ? 360 : 250, perfect45 ? 840 : 480, 0.1, 'triangle', 0.2);
+            },
+            reverse() {
+                this.play(320, 580, 0.08, 'sine', 0.14);
+            },
+            warningTick() {
+                this.play(720, 680, 0.04, 'square', 0.09);
+            },
+            slip() {
+                this.play(520, 95, 0.45, 'sawtooth', 0.22);
+            },
+            zap() {
+                this.play(110, 680, 0.35, 'sawtooth', 0.28);
+            },
+            checkpoint() {
+                [440, 554, 659, 880].forEach((f, i) => {
+                    setTimeout(() => this.play(f, f * 1.02, 0.18, 'triangle', 0.22), i * 75);
+                });
+            },
+            win() {
+                [523, 659, 784, 1046, 1318].forEach((f, i) => {
+                    setTimeout(() => this.play(f, f * 1.03, 0.24, 'triangle', 0.24), i * 95);
+                });
+            }
+        };
+
+        // --- 2. EXACT GEOMETRY & HARDCORE PHYSICS CONSTANTS ---
+        const TOTAL_PEGS = 200;          // 200 pegs * 2.5m = 500.0M
+        const METERS_PER_PEG = 2.5;
+        constCHECKPOINT_STEP = 20;       // Every 20 pegs = 50.0M Checkpoint
+        const STEP_DX = 78;              // Horizontal step between consecutive pegs
+        const STEP_DY = -80;             // Vertical step (-80px = +2.5m)
+        const ARM_LENGTH = 112;          // sqrt(78^2 + 80^2) = 111.73px -> 112px passes dead-center through every peg!
+        const GRAB_RADIUS = 24;          // Strict 24px grab radius (0.2s window! Miss = Slip!)
+        const GRAVITY = 1480;            // Punishing freefall gravity
+        const BASE_OMEGA = 3.35;         // Crisp, fast pendulum rotation (rad/s)
+
+        const RAGE_MESSAGES = [
+            "LỆCH 0.2s! TUỘT TAY RỒI!",
+            "BẤM HỤT MẤU! RƠI TỰ DO!",
+            "TOANG RỒI ÔNG GIÁO Ạ!",
+            "CHƯA VÀO TÂM ĐÃ BẤM!",
+            "RUN TAY À THỢ ĐIỆN?!"
+        ];
+
+        const ZONES = [
+            { maxM: 50,  name: "KHU 1 (0M-50M): CỘT ĐIỆN ĐẦU NGÕ",       hint: "Canh bàn tay quét đúng tâm mấu (Góc 45°) rồi bấm!" },
+            { maxM: 100, name: "KHU 2 (50M-100M): BU-LÔNG RỈ SÉT",       hint: "Chốt Đỏ Rỉ Sét chỉ giữ được 1.4 giây! Phải chụp thật nhanh!" },
+            { maxM: 150, name: "KHU 3 (100M-150M): DẦU NHỚT TRƠN TRƯỢT", hint: "Chốt Tím Dầu Nhớt làm tốc độ quay tăng vọt 1.65x!" },
+            { maxM: 250, name: "KHU 4 (150M-250M): CẦU DAO CHẮN GÓC",    hint: "Có điện chặn vòng quay! Bấm [W / SPACE] để ĐỔI CHIỀU QUAY!" },
+            { maxM: 350, name: "KHU 5 (250M-350M): RÒNG RỌC & HỒ QUANG", hint: "Canh lúc Ròng Rọc trượt vào vòng tầm tay 112px để chụp!" },
+            { maxM: 500, name: "KHU 6 (350M-500M): ĐỊA NGỤC CAO THẾ",    hint: "Tầng cuối! Kết hợp Đổi Chiều + Chốt Rỉ + Ròng Rọc!" }
+        ];
+
+        // --- 3. GAME STATE ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const state = {
+            pegs: [],
+            hazards: [],
+            wires: [],
+            particles: [],
+            popups: [],
+
+            checkpointIdx: 0,       // Peg index of highest unlocked 50m checkpoint (0, 20, 40, 60...)
+            currentMeters: 0,
+            bestMeters: 0,
+            falls: 0,
+            portraitMode: false,
+            helpOpen: false,
+            won: false,
+
+            camX: 0,
+            camY: -100,
+            shakeTime: 0,
+            zapTimer: 0,
+            lastTickBeep: 0,
+
+            player: {
+                mode: 'SWING',      // 'SWING', 'FALL', 'ZAPPED'
+                pivotHand: 'left',  // 'left' or 'right'
+                currentPeg: null,
+
+                angle: -Math.PI * 0.25,
+                omega: BASE_OMEGA,
+                dir: -1,            // -1 = CCW, 1 = CW
+
+                gripTimer: 0,
+                gripMax: 999,
+
+                leftHand: { x: 0, y: 0, holding: true },
+                rightHand: { x: 80, y: -80, holding: false },
+                body: { x: 40, y: -40, vx: 0, vy: 0 },
+
+                targetPeg: null
+            }
+        };
+
+        // --- 4. DETERMINISTIC 500M MEGA-TOWER BUILDER ---
+        function buildMegaTower() {
+            state.pegs = [];
+            state.hazards = [];
+            state.wires = [];
+            state.particles = [];
+            state.popups = [];
+            state.checkpointIdx = 0;
+            state.currentMeters = 0;
+            state.won = false;
+
+            let x = 0;
+            let y = 0;
+            let horizDir = 1;
+
+            for (let i = 0; i <= TOTAL_PEGS; i++) {
+                const meters = i * METERS_PER_PEG;
+                const isCheckpoint = (i % 20 === 0);
+                const isGoal = (i === TOTAL_PEGS);
+
+                if (i > 0) {
+                    // Bounce horizontally inside [-117, +117] while keeping |dx| === 78px and dy === -80px
+                    // This guarantees distance = sqrt(78^2 + (-80)^2) = 111.73px for EVERY SINGLE STEP!
+                    if (x + horizDir * STEP_DX > 120 || x + horizDir * STEP_DX < -120) {
+                        horizDir *= -1;
+                    }
+                    // Also alternate zig-zag periodically for engaging climbing rhythm
+                    if (i % 3 === 0 && Math.abs(x - horizDir * STEP_DX) <= 120) {
+                        horizDir *= -1;
+                    }
+                    x += horizDir * STEP_DX;
+                    y += STEP_DY;
+                }
+
+                // Determine peg type based on altitude zone (100% deterministic)
+                let type = 'steel';
+                let gripLimit = 3.2;     // Standard 3.2s grip timer before hand slips
+                let speedMult = 1.0;
+                let slideAmp = 0;
+                let slideSpeed = 0;
+                let label = '';
+
+                if (isGoal) {
+                    type = 'goal';
+                    gripLimit = 999999;
+                    label = 'ĐỈNH THÁP 500.0M - 500kV';
+                } else if (isCheckpoint) {
+                    type = 'checkpoint';
+                    gripLimit = 999999;  // Safe rest on 50M Checkpoint platforms!
+                    label = i === 0 ? 'CHÂN THÁP 0M (AN TOÀN)' : `TRẠM LƯU ${meters}M`;
+                } else {
+                    // Progressive difficulty scaling every 50m:
+                    // 1. Rust Pegs (50m+, snap after 1.4s!)
+                    if (meters > 50 && (i % 4 === 1 || (meters > 350 && i % 3 === 1))) {
+                        type = 'rust';
+                        gripLimit = 1.4;
+                    }
+                    // 2. Oil Pegs (100m+, spin 1.65x faster!)
+                    else if (meters > 100 && (i % 5 === 2 || (meters > 300 && i % 4 === 2))) {
+                        type = 'oil';
+                        speedMult = 1.65;
+                        gripLimit = 2.6;
+                    }
+                    // 3. Moving Pulleys (250m+, horizontal oscillation)
+                    else if (meters > 250 && i % 4 === 3 && (i + 1) % 20 !== 0) {
+                        type = 'pulley';
+                        slideAmp = 24;
+                        slideSpeed = 2.1 * ((i % 2 === 0) ? 1 : -1);
+                        gripLimit = 2.8;
+                    }
+                }
+
+                const pegObj = {
+                    id: i,
+                    meters,
+                    x, y,
+                    baseX: x,
+                    baseY: y,
+                    type,
+                    label,
+                    radius: isGoal ? 28 : (isCheckpoint ? 22 : 16),
+                    gripLimit,
+                    speedMult,
+                    slideAmp,
+                    slideSpeed,
+                    slidePhase: i * 0.85,
+                    guardSide: 0 // 0 = none, 1 = blocks bottom-right arc, -1 = blocks bottom-left arc
+                };
+                state.pegs.push(pegObj);
+
+                // Decorative high-voltage cable sag between pegs
+                if (i > 0) {
+                    const prev = state.pegs[i - 1];
+                    state.wires.push({
+                        x1: prev.baseX, y1: prev.baseY,
+                        x2: x, y2: y,
+                        sag: 24 + (i % 3) * 8
+                    });
+                }
+
+                // --- OBSTACLES & ONE-WAY ARC BLOCKERS ---
+                if (!isCheckpoint && !isGoal && i >= 2) {
+                    // A. One-Way Swing Arc Blocker (Starts at 75m, frequent at 150m+)
+                    // Places a live electric coil right on one side of this peg's 112px swing circle,
+                    // forcing the player to swing the OTHER way (using [W/Space] Reverse Dir)!
+                    if ((meters >= 75 && i % 5 === 0) || (meters >= 150 && i % 3 === 0)) {
+                        const nextDx = (i < TOTAL_PEGS) ? horizDir : 1;
+                        // Place blocker on the bottom-opposite side of the swing circle so 1 direction is safe & 1 direction is lethal
+                        const blockAngle = (nextDx > 0) ? (Math.PI * 0.65) : (Math.PI * 0.35);
+                        pegObj.guardSide = (nextDx > 0) ? 1 : -1;
+                        state.hazards.push({
+                            x: x + Math.cos(blockAngle) * (ARM_LENGTH * 0.88),
+                            y: y + Math.sin(blockAngle) * (ARM_LENGTH * 0.88),
+                            radius: 16,
+                            pulsing: false,
+                            period: 2.0,
+                            timer: 0,
+                            active: true,
+                            isBlocker: true
+                        });
+                    }
+
+                    // B. Timed High-Voltage Plasma Orbs outside the direct center-to-center line (25m+)
+                    if (meters >= 25 && i % 2 === 1) {
+                        const side = (x >= 0) ? 1 : -1;
+                        const isPulsing = (meters >= 200 && i % 3 === 1);
+                        state.hazards.push({
+                            x: x + side * 86,
+                            y: y - 18,
+                            radius: 19,
+                            pulsing: isPulsing,
+                            period: 1.8,
+                            timer: (i * 0.45) % 1.8,
+                            active: true,
+                            isBlocker: false
+                        });
+                    }
+                }
+            }
+
+            // Spawn player at 0M Start Checkpoint
+            respawnAtCheckpoint(true);
+        }
+
+        // --- 5. PLAYER ATTACHMENT & CHECKPOINT RESPAWN ---
+        function attachToPeg(peg, hand, isInitial = false) {
+            const p = state.player;
+            const prevX = p.currentPeg ? p.currentPeg.x : peg.x;
+            const prevY = p.currentPeg ? p.currentPeg.y : peg.y + 70;
+
+            p.mode = 'SWING';
+            p.pivotHand = hand;
+            p.currentPeg = peg;
+            p.gripTimer = peg.gripLimit;
+            p.gripMax = peg.gripLimit;
+
+            p.leftHand.holding = (hand === 'left');
+            p.rightHand.holding = (hand === 'right');
+
+            // Unlock 50m Checkpoint if this peg is a checkpoint station!
+            if (peg.type === 'checkpoint' && peg.id > state.checkpointIdx) {
+                state.checkpointIdx = peg.id;
+                Sound.checkpoint();
+                spawnSparks(peg.x, peg.y, "#34d399", 28);
+                addPopup(peg.x, peg.y - 42, `🏁 ĐÃ LƯU MỐC ${peg.meters}M!`, "#34d399");
+            }
+
+            if (isInitial) {
+                p.angle = -Math.PI * 0.15;
+                p.dir = -1;
+                state.camX = peg.x;
+                state.camY = peg.y - 110;
+            } else {
+                p.angle = Math.atan2(prevY - peg.y, prevX - peg.x);
+                // Keep natural angular momentum direction; player must press [W/Space] if a blocker guards their path!
+            }
+
+            p.omega = BASE_OMEGA * (peg.speedMult || 1.0);
+            updateLimbPositions();
+            updateHUD();
+        }
+
+        function respawnAtCheckpoint(isInitial = false) {
+            const cpPeg = state.pegs[state.checkpointIdx] || state.pegs[0];
+            state.zapTimer = 0;
+            attachToPeg(cpPeg, 'left', true);
+            if (!isInitial) {
+                spawnSparks(cpPeg.x, cpPeg.y, "#38bdf8", 18);
+                addPopup(cpPeg.x, cpPeg.y - 38, `⚡ HỒI SINH TẠI TRẠM ${cpPeg.meters}M`, "#38bdf8");
+            }
+        }
+
+        function updateLimbPositions() {
+            const p = state.player;
+            if (p.mode !== 'SWING' || !p.currentPeg) return;
+
+            const px = p.currentPeg.x;
+            const py = p.currentPeg.y;
+
+            const freeX = px + Math.cos(p.angle) * ARM_LENGTH;
+            const freeY = py + Math.sin(p.angle) * ARM_LENGTH;
+
+            p.targetPeg = findGrabTarget(freeX, freeY, p.currentPeg);
+
+            if (p.pivotHand === 'left') {
+                p.leftHand.x = px;
+                p.leftHand.y = py;
+                p.rightHand.x = freeX;
+                p.rightHand.y = freeY;
+            } else {
+                p.rightHand.x = px;
+                p.rightHand.y = py;
+                p.leftHand.x = freeX;
+                p.leftHand.y = freeY;
+            }
+
+            p.body.x = (p.leftHand.x + p.rightHand.x) * 0.5;
+            p.body.y = (p.leftHand.y + p.rightHand.y) * 0.5 + 12;
+        }
+
+        function findGrabTarget(hx, hy, ignorePeg) {
+            let best = null;
+            let bestDist = Infinity;
+            // Only need to scan nearby pegs for performance
+            const centerId = ignorePeg ? ignorePeg.id : Math.floor((-hy) / 80);
+            const startIdx = Math.max(0, centerId - 4);
+            const endIdx = Math.min(state.pegs.length - 1, centerId + 4);
+
+            for (let i = startIdx; i <= endIdx; i++) {
+                const peg = state.pegs[i];
+                if (peg === ignorePeg) continue;
+                const d = Math.hypot(hx - peg.x, hy - peg.y);
+                const allowedR = (peg.type === 'checkpoint' || peg.type === 'goal') ? (GRAB_RADIUS + 6) : GRAB_RADIUS;
+                if (d <= allowedR && d < bestDist) {
+                    best = peg;
+                    bestDist = d;
+                }
+            }
+            return best;
+        }
+
+        // --- 6. PLAYER INPUT HANDLERS (STRICT TIMING & REVERSE SWING) ---
+        function handleHandAction(pressedHand) {
+            if (state.won) return;
+            const p = state.player;
+            if (p.mode === 'ZAPPED') return;
+
+            // During freefall, allow emergency mid-air grab ONLY if hand passes within strict 22px of a peg
+            if (p.mode === 'FALL') {
+                const midAirTarget = findGrabTarget(p.leftHand.x, p.leftHand.y, null) ||
+                                     findGrabTarget(p.rightHand.x, p.rightHand.y, null);
+                if (midAirTarget) {
+                    Sound.grab(false);
+                    addPopup(midAirTarget.x, midAirTarget.y - 30, "🧤 CHỤP KỊP GIỮA KHÔNG TRUNG!", "#38bdf8");
+                    attachToPeg(midAirTarget, pressedHand, false);
+                }
+                return;
+            }
+
+            if (p.mode === 'SWING' && p.currentPeg) {
+                const freeHand = (p.pivotHand === 'left') ? 'right' : 'left';
+                const freeX = p.currentPeg.x + Math.cos(p.angle) * ARM_LENGTH;
+                const freeY = p.currentPeg.y + Math.sin(p.angle) * ARM_LENGTH;
+                const target = findGrabTarget(freeX, freeY, p.currentPeg);
+
+                // If player pressed the free hand button (or either button when locked onto target):
+                if (pressedHand === freeHand && target) {
+                    const distToCenter = Math.hypot(freeX - target.x, freeY - target.y);
+                    const isPerfect = distToCenter <= 12;
+
+                    Sound.grab(isPerfect);
+                    spawnSparks(target.x, target.y, isPerfect ? "#facc15" : "#38bdf8", isPerfect ? 16 : 9);
+
+                    if (isPerfect && target.y < p.currentPeg.y) {
+                        addPopup(target.x, target.y - 28, "🎯 CHUẨN TÂM 45°!", "#facc15");
+                    }
+
+                    attachToPeg(target, freeHand, false);
+
+                    if (target.type === 'goal') {
+                        triggerSummitVictory();
+                    }
+                } else {
+                    // HARDCORE PUNISHMENT: Pressed wrong hand OR pressed when free hand was outside 24px target!
+                    const msg = (pressedHand !== freeHand)
+                        ? "BUÔNG NHẦM TAY TRỤ! RƠI!"
+                        : RAGE_MESSAGES[state.falls % RAGE_MESSAGES.length];
+                    triggerFreefallSlip(msg);
+                }
+            }
+        }
+
+        function handleReverseDirection() {
+            if (state.won) return;
+            const p = state.player;
+            if (p.mode !== 'SWING') return;
+            p.dir *= -1;
+            Sound.reverse();
+            const freeX = (p.pivotHand === 'left') ? p.rightHand.x : p.leftHand.x;
+            const freeY = (p.pivotHand === 'left') ? p.rightHand.y : p.leftHand.y;
+            spawnSparks(freeX, freeY, "#facc15", 8);
+            addPopup(p.body.x, p.body.y - 32, "🔄 ĐỔI CHIỀU QUAY!", "#facc15");
+        }
+
+        function triggerFreefallSlip(reasonText) {
+            const p = state.player;
+            p.mode = 'FALL';
+            p.currentPeg = null;
+            p.targetPeg = null;
+            p.leftHand.holding = false;
+            p.rightHand.holding = false;
+
+            state.falls++;
+            state.shakeTime = 0.25;
+
+            // Launch with tangential velocity so player visibly tumbles down the tower
+            p.body.vx = Math.cos(p.angle + p.dir * Math.PI * 0.5) * 95;
+            p.body.vy = -50;
+
+            Sound.slip();
+            addPopup(p.body.x, p.body.y - 38, `💥 ${reasonText}`, "#fb7185");
+            updateHUD();
+        }
+
+        function triggerElectrocution(hazard) {
+            const p = state.player;
+            if (p.mode === 'ZAPPED') return;
+
+            p.mode = 'ZAPPED';
+            p.currentPeg = null;
+            p.targetPeg = null;
+            p.leftHand.holding = false;
+            p.rightHand.holding = false;
+
+            state.falls++;
+            state.zapTimer = 0.65;
+            state.shakeTime = 0.45;
+
+            const pushDir = (p.body.x >= hazard.x) ? 1 : -1;
+            p.body.vx = pushDir * 220;
+            p.body.vy = -190;
+
+            Sound.zap();
+            spawnSparks(p.body.x, p.body.y, "#fef08a", 30);
+            const cpMeters = state.checkpointIdx * METERS_PER_PEG;
+            addPopup(p.body.x, p.body.y - 45, `⚡ ĐIỆN GIẬT! VỀ TRẠM ${cpMeters}M!`, "#fef08a");
+            updateHUD();
+        }
+
+        function triggerSummitVictory() {
+            state.won = true;
+            Sound.win();
+            const topPeg = state.pegs[state.pegs.length - 1];
+            spawnSparks(topPeg.x, topPeg.y, "#facc15", 45);
+            spawnSparks(topPeg.x, topPeg.y, "#34d399", 40);
+
+            document.getElementById('vicTotalFalls').textContent = state.falls;
+            setTimeout(() => {
+                const modal = document.getElementById('victoryModal');
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }, 400);
+        }
+
+        function updateHUD() {
+            const p = state.player;
+            const cpMeters = (state.checkpointIdx * METERS_PER_PEG).toFixed(0);
+            document.getElementById('uiCheckpoint').textContent = `${cpMeters}M`;
+            document.getElementById('uiFalls').textContent = state.falls;
+
+            const btnL = document.getElementById('btnLeftHand');
+            const btnR = document.getElementById('btnRightHand');
+            const lblL = document.getElementById('lblLeftState');
+            const lblR = document.getElementById('lblRightState');
+
+            if (p.leftHand.holding) {
+                btnL.classList.add('holding');
+                lblL.textContent = "🔒 ĐANG TRỤ [A / ←]";
+            } else {
+                btnL.classList.remove('holding');
+                lblL.textContent = "🧤 BẤM CHỤP [A / ←]";
+            }
+
+            if (p.rightHand.holding) {
+                btnR.classList.add('holding');
+                lblR.textContent = "🔒 ĐANG TRỤ [D / →]";
+            } else {
+                btnR.classList.remove('holding');
+                lblR.textContent = "🧤 BẤM CHỤP [D / →]";
+            }
+        }
+
+        function spawnSparks(x, y, color, count) {
+            for (let i = 0; i < count; i++) {
+                const a = Math.random() * Math.PI * 2;
+                const s = 60 + Math.random() * 210;
+                state.particles.push({
+                    x, y,
+                    vx: Math.cos(a) * s,
+                    vy: Math.sin(a) * s,
+                    color,
+                    r: 2 + Math.random() * 3,
+                    life: 0.35 + Math.random() * 0.3
+                });
+            }
+        }
+
+        function addPopup(x, y, text, color) {
+            state.popups.push({ x, y, text, color, life: 1.2 });
+        }
+
+        // --- 7. MAIN PHYSICS & OBSTACLE UPDATE LOOP ---
+        function update(dt) {
+            if (state.won || state.helpOpen) return;
+            const p = state.player;
+
+            if (state.shakeTime > 0) state.shakeTime -= dt;
+
+            // 1. Update Sliding Pulleys & Timed Hazards
+            for (let i = 0; i < state.pegs.length; i++) {
+                const peg = state.pegs[i];
+                if (peg.type === 'pulley') {
+                    peg.slidePhase += peg.slideSpeed * dt;
+                    peg.x = peg.baseX + Math.sin(peg.slidePhase) * peg.slideAmp;
+                }
+            }
+
+            for (let i = 0; i < state.hazards.length; i++) {
+                const h = state.hazards[i];
+                if (h.pulsing) {
+                    h.timer = (h.timer + dt) % h.period;
+                    h.active = h.timer < (h.period * 0.55);
+                }
+            }
+
+            // 2. Handle Electrocution Respawn Timer
+            if (p.mode === 'ZAPPED') {
+                state.zapTimer -= dt;
+                p.body.vy += GRAVITY * dt;
+                p.body.x += p.body.vx * dt;
+                p.body.y += p.body.vy * dt;
+                p.angle += 10 * dt;
+                p.leftHand.x = p.body.x - Math.cos(p.angle) * 45;
+                p.leftHand.y = p.body.y - Math.sin(p.angle) * 45;
+                p.rightHand.x = p.body.x + Math.cos(p.angle) * 45;
+                p.rightHand.y = p.body.y + Math.sin(p.angle) * 45;
+
+                if (state.zapTimer <= 0) {
+                    respawnAtCheckpoint(false);
+                }
+            }
+            // 3. Handle Swinging State & Grip Fatigue Countdown
+            else if (p.mode === 'SWING' && p.currentPeg) {
+                // Countdown grip fatigue on non-checkpoint pegs
+                if (p.gripMax < 900) {
+                    p.gripTimer -= dt;
+                    if (p.gripTimer <= 0.8 && p.gripTimer > 0) {
+                        const now = performance.now();
+                        if (now - state.lastTickBeep > 220) {
+                            state.lastTickBeep = now;
+                            Sound.warningTick();
+                        }
+                    }
+                    if (p.gripTimer <= 0) {
+                        spawnSparks(p.currentPeg.x, p.currentPeg.y, "#fb7185", 16);
+                        const slipMsg = (p.currentPeg.type === 'rust')
+                            ? "GÃY CHỐT RỈ SÉT (QUÁ 1.4s)!"
+                            : "MỎI TAY TUỘT CHỐT (QUÁ 3.2s)!";
+                        triggerFreefallSlip(slipMsg);
+                        return;
+                    }
+                }
+
+                // Deterministic pendulum angular velocity (slightly faster at bottom of swing)
+                const gravAccel = 1.0 + 0.24 * Math.sin(p.angle);
+                p.angle += p.dir * p.omega * gravAccel * dt;
+
+                updateLimbPositions();
+
+                // Update live tactical status bar
+                const statusEl = document.getElementById('uiLiveStatus');
+                const freeHandTxt = (p.pivotHand === 'left') ? 'TAY PHẢI [D / →]' : 'TAY TRÁI [A / ←]';
+                if (p.targetPeg) {
+                    statusEl.innerHTML = `🟢 <span class="text-emerald-300">ĐÚNG TÂM MẤU!</span> Bấm <span class="underline text-white">${freeHandTxt}</span> ngay!`;
+                } else if (p.gripMax < 900 && p.gripTimer < 1.1) {
+                    statusEl.innerHTML = `🚨 <span class="text-rose-400">SẮP TUỘT TAY (${p.gripTimer.toFixed(1)}s)!</span> Bấm chụp hoặc Đổi Chiều [W/Space]!`;
+                } else {
+                    const zone = ZONES.find(z => state.currentMeters <= z.maxM) || ZONES[ZONES.length - 1];
+                    statusEl.innerHTML = `⚡ <span class="text-cyan-300">${zone.name}:</span> <span class="text-amber-200">${zone.hint}</span>`;
+                }
+            }
+            // 4. Handle Punishing Freefall down to Checkpoint Floor
+            else if (p.mode === 'FALL') {
+                p.body.vy += GRAVITY * dt;
+                p.body.vy = Math.min(p.body.vy, 1050);
+                p.body.x += p.body.vx * dt;
+                p.body.y += p.body.vy * dt;
+
+                // Flail arms while falling
+                p.angle += 7.5 * dt;
+                p.leftHand.x = p.body.x - Math.cos(p.angle) * 48;
+                p.leftHand.y = p.body.y - Math.sin(p.angle) * 48;
+                p.rightHand.x = p.body.x + Math.cos(p.angle) * 48;
+                p.rightHand.y = p.body.y + Math.sin(p.angle) * 48;
+
+                // Check if player has fallen down to their last unlocked 50M Checkpoint safety net!
+                const cpPeg = state.pegs[state.checkpointIdx] || state.pegs[0];
+                if (p.body.y >= cpPeg.y) {
+                    Sound.grab(false);
+                    state.shakeTime = 0.25;
+                    respawnAtCheckpoint(false);
+                    return;
+                }
+            }
+
+            // 5. Electric Hazard Collision Check (Checks both hands and body)
+            if (p.mode !== 'ZAPPED') {
+                const centerId = Math.max(0, Math.floor((-p.body.y) / 80));
+                for (let i = 0; i < state.hazards.length; i++) {
+                    const h = state.hazards[i];
+                    if (!h.active) continue;
+                    if (Math.abs(h.y - p.body.y) > 160) continue;
+
+                    const dBody = Math.hypot(p.body.x - h.x, p.body.y - h.y);
+                    const dL = Math.hypot(p.leftHand.x - h.x, p.leftHand.y - h.y);
+                    const dR = Math.hypot(p.rightHand.x - h.x, p.rightHand.y - h.y);
+                    if (dBody < h.radius + 11 || dL < h.radius + 5 || dR < h.radius + 5) {
+                        triggerElectrocution(h);
+                        break;
+                    }
+                }
+            }
+
+            // 6. Update Altitude Meters & Vertical Tower Progress Bar
+            const rawMeters = Math.max(0, Math.min(500, (-p.body.y / (-STEP_DY)) * METERS_PER_PEG));
+            state.currentMeters = (p.mode === 'SWING' && p.currentPeg) ? p.currentPeg.meters : rawMeters;
+            if (state.currentMeters > state.bestMeters) {
+                state.bestMeters = state.currentMeters;
+            }
+
+            document.getElementById('uiHeight').textContent = `${state.currentMeters.toFixed(1)}M`;
+            document.getElementById('uiBestHeight').textContent = `${state.bestMeters.toFixed(1)}M`;
+
+            const pct = (state.currentMeters / 500) * 100;
+            const cpPct = ((state.checkpointIdx * METERS_PER_PEG) / 500) * 100;
+            document.getElementById('uiTowerFill').style.height = `${pct}%`;
+            document.getElementById('uiPlayerDot').style.bottom = `calc(${pct}% - 7px)`;
+            document.getElementById('uiCheckpointDot').style.bottom = `${cpPct}%`;
+
+            // 7. Smooth Camera Follow
+            const targetCamX = p.body.x * 0.45;
+            const targetCamY = p.body.y - 65;
+            state.camX += (targetCamX - state.camX) * Math.min(1, dt * 8);
+            state.camY += (targetCamY - state.camY) * Math.min(1, dt * 10);
+
+            // 8. Update Particles & Floating Popups
+            for (let i = state.particles.length - 1; i >= 0; i--) {
+                const pt = state.particles[i];
+                pt.x += pt.vx * dt;
+                pt.y += pt.vy * dt;
+                pt.vy += 380 * dt;
+                pt.life -= dt;
+                if (pt.life <= 0) state.particles.splice(i, 1);
+            }
+            for (let i = state.popups.length - 1; i >= 0; i--) {
+                const pp = state.popups[i];
+                pp.y -= 44 * dt;
+                pp.life -= dt;
+                if (pp.life <= 0) state.popups.splice(i, 1);
+            }
+        }
+
+        // --- 8. HIGH-DPI 2D CANVAS RENDERER ---
+        function render() {
+            const wrapper = document.getElementById('stageWrapper');
+            const w = wrapper.clientWidth || window.innerWidth || 800;
+            const h = wrapper.clientHeight || window.innerHeight || 600;
+            const dpr = Math.min(2, window.devicePixelRatio || 1);
+
+            if (canvas.width !== Math.floor(w * dpr) || canvas.height !== Math.floor(h * dpr)) {
+                canvas.width = Math.floor(w * dpr);
+                canvas.height = Math.floor(h * dpr);
+            }
+
+            ctx.save();
+            ctx.scale(dpr, dpr);
+
+            // Dynamic Sky Gradient based on Altitude (0M Street -> 250M Stratosphere -> 500M Ionosphere)
+            const altRatio = Math.min(1, state.currentMeters / 500);
+            const grad = ctx.createLinearGradient(0, 0, 0, h);
+            if (altRatio < 0.4) {
+                grad.addColorStop(0, "#070c18");
+                grad.addColorStop(1, "#1e293b");
+            } else if (altRatio < 0.75) {
+                grad.addColorStop(0, "#0f0722");
+                grad.addColorStop(1, "#311042");
+            } else {
+                grad.addColorStop(0, "#04040a");
+                grad.addColorStop(1, "#3b0764");
+            }
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, w, h);
+
+            // Background Stars & Parallax Grid
+            drawBackgroundAtmosphere(ctx, w, h);
+
+            // Camera Transform
+            let sx = 0, sy = 0;
+            if (state.shakeTime > 0) {
+                sx = (Math.random() - 0.5) * 13;
+                sy = (Math.random() - 0.5) * 13;
+            }
+
+            ctx.save();
+            ctx.translate(w * 0.5 - state.camX + sx, h * 0.62 - state.camY + sy);
+
+            const viewTopY = state.camY - h * 0.8;
+            const viewBotY = state.camY + h * 0.6;
+
+            // 1. Draw Mega-Tower Steel Lattice & Altitude Ruler
+            drawMegaTowerStructure(ctx, viewTopY, viewBotY);
+
+            // 2. Draw Active Checkpoint Laser Safety Floor
+            drawCheckpointSafetyFloor(ctx);
+
+            // 3. Draw Swing Circle, 45° Sweet-Spot & Grip Countdown Gauge
+            if (state.player.mode === 'SWING' && state.player.currentPeg) {
+                drawSwingTelemetry(ctx);
+            }
+
+            // 4. Draw Visible Pegs & 50M Checkpoint Platforms
+            for (let i = 0; i < state.pegs.length; i++) {
+                const peg = state.pegs[i];
+                if (peg.y < viewTopY - 120 || peg.y > viewBotY + 120) continue;
+                drawPeg(ctx, peg);
+            }
+
+            // 5. Draw Visible Electric Hazards & One-Way Blockers
+            for (let i = 0; i < state.hazards.length; i++) {
+                const haz = state.hazards[i];
+                if (haz.y < viewTopY - 100 || haz.y > viewBotY + 100) continue;
+                drawHazard(ctx, haz);
+            }
+
+            // 6. Draw Electrician Character
+            drawPlayer(ctx);
+
+            // 7. Draw Sparks & Popups
+            for (let i = 0; i < state.particles.length; i++) {
+                const pt = state.particles[i];
+                ctx.fillStyle = pt.color;
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            for (let i = 0; i < state.popups.length; i++) {
+                const pp = state.popups[i];
+                ctx.save();
+                ctx.globalAlpha = Math.min(1, pp.life * 1.4);
+                ctx.font = "900 13px 'Be Vietnam Pro', sans-serif";
+                ctx.textAlign = "center";
+                ctx.strokeStyle = "#020617";
+                ctx.lineWidth = 4;
+                ctx.strokeText(pp.text, pp.x, pp.y);
+                ctx.fillStyle = pp.color;
+                ctx.fillText(pp.text, pp.x, pp.y);
+                ctx.restore();
+            }
+
+            ctx.restore();
+            ctx.restore();
+        }
+
+        function drawBackgroundAtmosphere(ctx, w, h) {
+            ctx.fillStyle = "rgba(255, 255, 255, 0.28)";
+            for (let i = 0; i < 28; i++) {
+                const sx = (i * 193) % w;
+                const sy = ((i * 109) - state.camY * 0.05) % h;
+                ctx.fillRect(sx, (sy + h) % h, 2, 2);
+            }
+        }
+
+        function drawMegaTowerStructure(ctx, viewTopY, viewBotY) {
+            const topY = state.pegs[state.pegs.length - 1].baseY - 160;
+            const botY = 180;
+
+            // Ground Street Level (0M)
+            if (viewBotY > -50) {
+                ctx.fillStyle = "#1e293b";
+                ctx.fillRect(-500, 65, 1000, 150);
+                ctx.strokeStyle = "#475569";
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(-500, 65);
+                ctx.lineTo(500, 65);
+                ctx.stroke();
+            }
+
+            // Main High-Voltage Steel Lattice Pylon
+            ctx.fillStyle = "rgba(30, 41, 59, 0.7)";
+            ctx.fillRect(-130, topY, 10, botY - topY);
+            ctx.fillRect(120, topY, 10, botY - topY);
+
+            // Central Concrete Core
+            const coreGrad = ctx.createLinearGradient(-26, 0, 26, 0);
+            coreGrad.addColorStop(0, "#1e293b");
+            coreGrad.addColorStop(0.5, "#475569");
+            coreGrad.addColorStop(1, "#0f172a");
+            ctx.fillStyle = coreGrad;
+            ctx.fillRect(-26, topY, 52, botY - topY);
+
+            // Crossbeams & Altitude Meter Markers every 10M (320px)
+            const firstStep = Math.max(0, Math.floor((-viewBotY) / 80) - 2);
+            const lastStep = Math.min(TOTAL_PEGS, Math.ceil((-viewTopY) / 80) + 2);
+
+            ctx.strokeStyle = "rgba(71, 85, 105, 0.42)";
+            ctx.lineWidth = 2;
+            for (let i = firstStep; i <= lastStep; i++) {
+                const py = i * STEP_DY;
+                // Diagonal lattice truss
+                ctx.beginPath();
+                ctx.moveTo(-125, py);
+                ctx.lineTo(125, py + STEP_DY);
+                ctx.moveTo(125, py);
+                ctx.lineTo(-125, py + STEP_DY);
+                ctx.stroke();
+
+                // Every 4 pegs = 10 Meters marker on tower core
+                if (i % 4 === 0) {
+                    const m = i * METERS_PER_PEG;
+                    ctx.fillStyle = (i % 20 === 0) ? "#34d399" : "rgba(148, 163, 184, 0.45)";
+                    ctx.font = "800 10px 'JetBrains Mono', monospace";
+                    ctx.textAlign = "center";
+                    ctx.fillText(`${m}M`, 0, py + 4);
+                }
+            }
+
+            // Sagging Wires
+            ctx.strokeStyle = "rgba(2, 6, 23, 0.75)";
+            ctx.lineWidth = 3;
+            for (let i = Math.max(0, firstStep); i < Math.min(state.wires.length, lastStep); i++) {
+                const w = state.wires[i];
+                ctx.beginPath();
+                ctx.moveTo(w.x1, w.y1);
+                ctx.quadraticCurveTo((w.x1 + w.x2) * 0.5, (w.y1 + w.y2) * 0.5 + w.sag, w.x2, w.y2);
+                ctx.stroke();
+            }
+
+            // dashed path between consecutive pegs
+            ctx.save();
+            ctx.strokeStyle = "rgba(56, 189, 248, 0.22)";
+            ctx.lineWidth = 2;
+            ctx.setLineDash([6, 6]);
+            ctx.beginPath();
+            for (let i = firstStep; i <= lastStep; i++) {
+                const peg = state.pegs[i];
+                if (!peg) continue;
+                if (i === firstStep) ctx.moveTo(peg.x, peg.y);
+                else ctx.lineTo(peg.x, peg.y);
+            }
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawCheckpointSafetyFloor(ctx) {
+            const cpPeg = state.pegs[state.checkpointIdx] || state.pegs[0];
+            ctx.save();
+
+            // Glowing laser safety net across the tower at the active checkpoint
+            ctx.strokeStyle = "#10b981";
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(-220, cpPeg.y + 18);
+            ctx.lineTo(220, cpPeg.y + 18);
+            ctx.stroke();
+
+            ctx.fillStyle = "rgba(16, 185, 129, 0.16)";
+            ctx.fillRect(-220, cpPeg.y + 18, 440, 18);
+
+            ctx.fillStyle = "#34d399";
+            ctx.font = "900 10px 'JetBrains Mono', monospace";
+            ctx.textAlign = "center";
+            ctx.fillText(`🛡️ LƯỚI HỒI SINH TRẠM ${cpPeg.meters}M ĐANG BẬT`, 0, cpPeg.y + 31);
+            ctx.restore();
+        }
+
+        function drawSwingTelemetry(ctx) {
+            const p = state.player;
+            const piv = p.currentPeg;
+            ctx.save();
+            ctx.translate(piv.x, piv.y);
+
+            // 1. Exact 112px Arm Reach Circle
+            ctx.strokeStyle = "rgba(148, 163, 184, 0.28)";
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.arc(0, 0, ARM_LENGTH, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // 2. Highlight 45-degree upper arcs (-45° and -135°)
+            const span = 14 * (Math.PI / 180);
+            const angles = [-Math.PI * 0.25, -Math.PI * 0.75];
+            for (let i = 0; i < angles.length; i++) {
+                const a = angles[i];
+                ctx.strokeStyle = "rgba(250, 204, 21, 0.55)";
+                ctx.lineWidth = 5;
+                ctx.beginPath();
+                ctx.arc(0, 0, ARM_LENGTH, a - span, a + span);
+                ctx.stroke();
+            }
+
+            // 3. Grip Fatigue Countdown Ring around current Pivot Peg
+            if (p.gripMax < 900) {
+                const ratio = Math.max(0, p.gripTimer / p.gripMax);
+                ctx.strokeStyle = ratio > 0.4 ? "#38bdf8" : "#f43f5e";
+                ctx.lineWidth = 4.5;
+                ctx.beginPath();
+                ctx.arc(0, 0, piv.radius + 7, -Math.PI * 0.5, -Math.PI * 0.5 + Math.PI * 2 * ratio);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+
+            // 4. Target Lock-On Ring when Free Hand is inside 24px Grab Radius!
+            if (p.targetPeg) {
+                const tp = p.targetPeg;
+                ctx.save();
+                ctx.strokeStyle = "#4ade80";
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.arc(tp.x, tp.y, GRAB_RADIUS, 0, Math.PI * 2);
+                ctx.stroke();
+
+                ctx.font = "900 11px 'Be Vietnam Pro', sans-serif";
+                ctx.textAlign = "center";
+                ctx.strokeStyle = "#020617";
+                ctx.lineWidth = 3.5;
+                const keyTxt = (p.pivotHand === 'left') ? "BẤM [D / →]!" : "BẤM [A / ←]!";
+                ctx.strokeText(keyTxt, tp.x, tp.y - tp.radius - 14);
+                ctx.fillStyle = "#4ade80";
+                ctx.fillText(keyTxt, tp.x, tp.y - tp.radius - 14);
+                ctx.restore();
+            }
+        }
+
+        function drawPeg(ctx, peg) {
+            ctx.save();
+
+            // Checkpoint Transformer Platform (every 50m)
+            if (peg.type === 'checkpoint') {
+                const unlocked = state.checkpointIdx >= peg.id;
+                ctx.fillStyle = unlocked ? "#064e3b" : "#1e293b";
+                ctx.strokeStyle = unlocked ? "#34d399" : "#94a3b8";
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.roundRect(peg.x - 68, peg.y - 16, 136, 32, 8);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = unlocked ? "#6ee7b7" : "#e2e8f0";
+                ctx.font = "900 10px 'Be Vietnam Pro', sans-serif";
+                ctx.textAlign = "center";
+                ctx.fillText(peg.label, peg.x, peg.y - 22);
+            }
+
+            // 500M Summit Goal Box
+            if (peg.type === 'goal') {
+                ctx.fillStyle = "#3b0764";
+                ctx.strokeStyle = "#facc15";
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.roundRect(peg.x - 52, peg.y - 26, 104, 52, 10);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = "#facc15";
+                ctx.font = "900 11px 'Be Vietnam Pro', sans-serif";
+                ctx.textAlign = "center";
+                ctx.fillText("⚡ TRẠM ĐỈNH 500M ⚡", peg.x, peg.y + 4);
+                ctx.restore();
+                return;
+            }
+
+            // Pulley Horizontal Track
+            if (peg.type === 'pulley') {
+                ctx.strokeStyle = "rgba(56, 189, 248, 0.5)";
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(peg.baseX - peg.slideAmp, peg.baseY);
+                ctx.lineTo(peg.baseX + peg.slideAmp, peg.baseY);
+                ctx.stroke();
+            }
+
+            // Peg Node Circle
+            ctx.beginPath();
+            ctx.arc(peg.x, peg.y, peg.radius, 0, Math.PI * 2);
+            if (peg.type === 'rust') {
+                ctx.fillStyle = "#9a3412";
+                ctx.strokeStyle = "#fb923c";
+            } else if (peg.type === 'oil') {
+                ctx.fillStyle = "#581c87";
+                ctx.strokeStyle = "#c084fc";
+            } else if (peg.type === 'pulley') {
+                ctx.fillStyle = "#0369a1";
+                ctx.strokeStyle = "#38bdf8";
+            } else if (peg.type === 'checkpoint') {
+                ctx.fillStyle = "#059669";
+                ctx.strokeStyle = "#6ee7b7";
+            } else {
+                ctx.fillStyle = "#e2e8f0";
+                ctx.strokeStyle = "#38bdf8";
+            }
+            ctx.lineWidth = 3;
+            ctx.fill();
+            ctx.stroke();
+
+            // Center Bolt
+            ctx.fillStyle = "#090d16";
+            ctx.beginPath();
+            ctx.arc(peg.x, peg.y, 4.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Type Badge Subtitle
+            if (peg.type === 'rust') {
+                ctx.fillStyle = "#fdba74";
+                ctx.font = "800 8px 'JetBrains Mono', monospace";
+                ctx.textAlign = "center";
+                ctx.fillText("RỈ 1.4s", peg.x, peg.y + peg.radius + 11);
+            } else if (peg.type === 'oil') {
+                ctx.fillStyle = "#e9d5ff";
+                ctx.font = "800 8px 'JetBrains Mono', monospace";
+                ctx.textAlign = "center";
+                ctx.fillText("NHỚT 1.6x", peg.x, peg.y + peg.radius + 11);
+            }
+
+            ctx.restore();
+        }
+
+        function drawHazard(ctx, h) {
+            ctx.save();
+            if (h.pulsing) {
+                const rem = 1 - (h.timer / h.period);
+                ctx.strokeStyle = h.active ? "rgba(239, 68, 68, 0.55)" : "rgba(56, 189, 248, 0.4)";
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.arc(h.x, h.y, h.radius + 5, -Math.PI * 0.5, -Math.PI * 0.5 + Math.PI * 2 * rem);
+                ctx.stroke();
+            }
+
+            if (h.active) {
+                ctx.fillStyle = h.isBlocker ? "rgba(245, 158, 11, 0.32)" : "rgba(239, 68, 68, 0.3)";
+                ctx.beginPath();
+                ctx.arc(h.x, h.y, h.radius + 5, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.strokeStyle = h.isBlocker ? "#fde047" : "#fca5a5";
+                ctx.lineWidth = 2;
+                const tick = Math.floor(performance.now() * 0.03);
+                for (let i = 0; i < 5; i++) {
+                    const a = (i / 5) * Math.PI * 2 + tick * 0.7;
+                    ctx.beginPath();
+                    ctx.moveTo(h.x, h.y);
+                    ctx.lineTo(h.x + Math.cos(a) * h.radius, h.y + Math.sin(a) * h.radius);
+                    ctx.stroke();
+                }
+
+                ctx.fillStyle = "#fef08a";
+                ctx.beginPath();
+                ctx.arc(h.x, h.y, 5, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                ctx.fillStyle = "#334155";
+                ctx.beginPath();
+                ctx.arc(h.x, h.y, 7, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        function drawPlayer(ctx) {
+            const p = state.player;
+            const bx = p.body.x;
+            const by = p.body.y;
+            const zapFlash = (p.mode === 'ZAPPED' && Math.floor(performance.now() * 0.04) % 2 === 0);
+
+            ctx.save();
+
+            // Legs
+            const legSwing = Math.sin(p.angle * 2) * 7;
+            ctx.strokeStyle = zapFlash ? "#ffffff" : "#1e3a8a";
+            ctx.lineWidth = 6;
+            ctx.lineCap = "round";
+            ctx.beginPath();
+            ctx.moveTo(bx - 5, by + 10);
+            ctx.lineTo(bx - 9 + legSwing, by + 28);
+            ctx.moveTo(bx + 5, by + 10);
+            ctx.lineTo(bx + 9 + legSwing, by + 28);
+            ctx.stroke();
+
+            // Left Arm (Cyan #00e5ff)
+            ctx.strokeStyle = zapFlash ? "#ffffff" : "#00e5ff";
+            ctx.lineWidth = 7;
+            ctx.beginPath();
+            ctx.moveTo(bx - 8, by - 3);
+            ctx.lineTo(p.leftHand.x, p.leftHand.y);
+            ctx.stroke();
+
+            // Right Arm (Orange #ff9100)
+            ctx.strokeStyle = zapFlash ? "#ffffff" : "#ff9100";
+            ctx.lineWidth = 7;
+            ctx.beginPath();
+            ctx.moveTo(bx + 8, by - 3);
+            ctx.lineTo(p.rightHand.x, p.rightHand.y);
+            ctx.stroke();
+
+            // Electrician Safety Vest
+            ctx.fillStyle = zapFlash ? "#020617" : "#2563eb";
+            ctx.strokeStyle = "#facc15";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.roundRect(bx - 12, by - 10, 24, 24, 6);
+            ctx.fill();
+            ctx.stroke();
+
+            // Head & Hardhat
+            ctx.fillStyle = "#fde047";
+            ctx.beginPath();
+            ctx.arc(bx, by - 18, 10, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = "#facc15";
+            ctx.beginPath();
+            ctx.arc(bx, by - 21, 11.5, Math.PI, 0);
+            ctx.fill();
+            ctx.fillRect(bx - 14, by - 22, 28, 3);
+
+            // Left Glove (#00e5ff)
+            ctx.fillStyle = "#00e5ff";
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(p.leftHand.x, p.leftHand.y, p.leftHand.holding ? 10.5 : 8.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Right Glove (#ff9100)
+            ctx.fillStyle = "#ff9100";
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(p.rightHand.x, p.rightHand.y, p.rightHand.holding ? 10.5 : 8.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // --- 9. KEYBOARD, MOUSE & TOUCH BINDINGS ---
+        function toggleHelpModal(forceState) {
+            state.helpOpen = (typeof forceState === 'boolean') ? forceState : !state.helpOpen;
+            const modal = document.getElementById('helpModal');
+            if (state.helpOpen) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            } else {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.repeat) return;
+            Sound.init();
+            if (e.code === 'KeyH' || e.key === '?' || e.code === 'Escape') {
+                e.preventDefault();
+                toggleHelpModal();
+                return;
+            }
+            if (state.helpOpen) return;
+            if (e.code === 'KeyA' || e.code === 'ArrowLeft') {
+                e.preventDefault();
+                handleHandAction('left');
+            } else if (e.code === 'KeyD' || e.code === 'ArrowRight') {
+                e.preventDefault();
+                handleHandAction('right');
+            } else if (e.code === 'KeyW' || e.code === 'Space' || e.code === 'ArrowUp') {
+                e.preventDefault();
+                handleReverseDirection();
+            } else if (e.code === 'KeyR') {
+                e.preventDefault();
+                respawnAtCheckpoint(false);
+            }
+        });
+
+        document.getElementById('btnLeftHand').addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            Sound.init();
+            handleHandAction('left');
+        });
+        document.getElementById('btnRightHand').addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            Sound.init();
+            handleHandAction('right');
+        });
+        document.getElementById('btnReverseDir').addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            Sound.init();
+            handleReverseDirection();
+        });
+
+        // Direct canvas tap: left 40% = Left Hand, middle 20% = Reverse Spin, right 40% = Right Hand
+        canvas.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            Sound.init();
+            if (state.helpOpen) return;
+            const rect = canvas.getBoundingClientRect();
+            const ratioX = (e.clientX - rect.left) / rect.width;
+            if (ratioX < 0.4) {
+                handleHandAction('left');
+            } else if (ratioX > 0.6) {
+                handleHandAction('right');
+            } else {
+                handleReverseDirection();
+            }
+        });
+
+        document.getElementById('btnRespawnCheckpoint').addEventListener('click', () => {
+            Sound.init();
+            respawnAtCheckpoint(false);
+        });
+
+        document.getElementById('btnToggleSound').addEventListener('click', (e) => {
+            Sound.init();
+            Sound.enabled = !Sound.enabled;
+            e.currentTarget.textContent = Sound.enabled ? '🔊' : '🔇';
+        });
+
+        document.getElementById('btnToggleHelp').addEventListener('click', () => {
+            Sound.init();
+            toggleHelpModal();
+        });
+
+        document.getElementById('btnCloseHelp').addEventListener('click', () => {
+            toggleHelpModal(false);
+        });
+
+        document.getElementById('btnToggleAspect').addEventListener('click', () => {
+            state.portraitMode = !state.portraitMode;
+            const wrapper = document.getElementById('stageWrapper');
+            wrapper.classList.toggle('portrait-frame', state.portraitMode);
+            document.getElementById('lblAspect').textContent = state.portraitMode ? 'Dọc' : 'Ngang';
+        });
+
+        document.getElementById('btnRestartFullTower').addEventListener('click', () => {
+            document.getElementById('victoryModal').classList.add('hidden');
+            document.getElementById('victoryModal').classList.remove('flex');
+            state.falls = 0;
+            buildMegaTower();
+        });
+
+        // --- 10. IMMEDIATE GAME LOOP START ---
+        let lastTime = performance.now();
+        function animate(now) {
+            const dt = Math.min(0.033, Math.max(0.001, (now - lastTime) / 1000));
+            lastTime = now;
+            update(dt);
+            render();
+            requestAnimationFrame(animate);
+        }
+
+        buildMegaTower();
+        requestAnimationFrame(animate);
+    </script>
+</body>
+</html>
