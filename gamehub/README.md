@@ -3,6 +3,7 @@
 Website gồm **2 phần**:
 
 | Phần | Chạy ở đâu | Dùng để làm gì |
+
 |---|---|---|
 | **Trang quản lý** (`app.py`) | Trên máy của bạn (`localhost:5000`) | Đăng nhập, thêm / sửa / xóa game, sao lưu |
 | **Web công khai** (thư mục `site`) | Netlify (`2cc.netlify.app`, tên miền riêng nếu đã gắn) | Người chơi vào chọn game và chơi |
