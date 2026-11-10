@@ -24,6 +24,8 @@ Chi tiết từng bước ở dưới.
 
 ---
 
+
+
 ## 2. Thêm game ở trang quản lý
 
 ### Chuẩn bị
