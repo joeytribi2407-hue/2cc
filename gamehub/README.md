@@ -3,6 +3,7 @@
 Website gồm **2 phần**:
 
 | Phần | Chạy ở đâu | Dùng để làm gì |
+
 |---|---|---|
 | **Trang quản lý** (`app.py`) | Trên máy của bạn (`localhost:5000`) | Đăng nhập, thêm / sửa / xóa game, sao lưu |
 | **Web công khai** (thư mục `site`) | Netlify (`2cc.netlify.app`, tên miền riêng nếu đã gắn) | Người chơi vào chọn game và chơi |
@@ -22,6 +23,8 @@ Mỗi lần thêm game, bạn làm trên máy rồi *xuất* ra thư mục `site
 Chi tiết từng bước ở dưới.
 
 ---
+
+
 
 ## 2. Thêm game ở trang quản lý
 
@@ -145,4 +148,5 @@ Trong Netlify: **Domain management → thêm tên miền**. Rồi ở nơi quả
 | A | `@` | `75.2.60.5` (theo tài liệu Netlify) |
 
 Netlify khuyên dùng `www.tenmien` làm địa chỉ chính khi dùng DNS bên ngoài. Bản ghi có thể mất đến một ngày để có hiệu lực.
-admin123
+admin
+Admin@123
